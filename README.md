@@ -13,7 +13,8 @@ This mod aims to make debugging in Mindustry Logic a bit easier. Provided functi
 * **Memory** screen for inspecting contents of memory blocks, using the same interface as the **Vars** screen. Includes a command to clear (reset) the contents of memory blocks.
 * Settings for overriding instruction limit, by up to 1000 instructions. This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
 * **Snapshots** allow saving, reviewing and restoring the state of logic processors, memory blocks and all other blocks on the map. A snapshot can be created manually or using a logic instruction. A limited number of snapshots is kept for each block, allowing to review the exact block state at the time the smapshot has been created.
-* A **profiler** for gathering statistics about individual processor instructions execution.  
+* A **profiler** for gathering statistics about individual processor instructions execution.
+* **Logging**: a custom `log` instruction can create ligging messages that can be later inspected from the UI.
 * Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a bbreakpoint, taking snaphots and managing profiling.
 * Visual indication of stopped processors, processors executing a `wait` instruction, and failed runtime checks, directly on the map.
 
@@ -79,7 +80,7 @@ A brief help is available on the **Vars**/**Memory**/**Properties** screens.
 
 ## Settings
 
-Snapshots can be completely deactivated in settings by seting the maximum number of kept snapshots to 0. When disabled, snapshots can'T be created in any wany and no snapshot-related elements appear in the UI.
+Snapshots can be completely deactivated in settings by seting the maximum number of kept snapshots to 0. When disabled, snapshots can't be created in any wany and no snapshot-related elements appear in the UI.
 
 It is possible to activate creating a snapshot when a breakpoint it hit or an assertion fails.
 
@@ -88,6 +89,12 @@ It is possible to activate creating a snapshot when a breakpoint it hit or an as
 By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displaed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are uptated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, using the [`profile` instruction](#instruction-profile), or using a [custom game rule](#custom-game-rules).
 
 Profiling a program allows you to identify the instructions the processor has spent the most time executing. Profiling is relatively low-cost (at least compared to the snapshotting), and can be safely left active on many processors for long periods of time.
+
+# Logging
+
+A message can be added to in-game log using the [`log` instruction](#instruction-log). Logged messages can be inspected on the **Log** screen, copied to the clipboard or saved to a file. Basic filtering by level and category is available. Logged messages aren't saved in the map file and are lost when exiting the map.
+
+The maximum number of logged messages is configurable in settings. When the limit is reached, older messages are removed from the log.
 
 # Custom instructions
 
@@ -200,17 +207,18 @@ This instruction displays an error message and stops the program execution. The 
 * `message`: the error message to display.
 * `p1` .. `p9`: additional parameters to display in the error message.
 
-A variable name enclosed in curly braces (`{` and `}`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
+A variable name enclosed in curly braces (`{` and `}`, e.g. `"Accessing value at index {index}."`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
 
 ## Instruction `log`
 
-This instruction writes a message into the game's log file. It is up to the user to avoid writing too many error messages into the file. The instruction takes these parameters:
+This instruction writes a message into the current processor's log. The logged messages can be viewed from the in-game UI. 
 
 * `level`: the log level of the message, one of `debug`, `info`, `warning`, or `err`.
-* `message`: the error message to display.
+* `category`: the message's categroy. Should be a short string, although any values are suported and used after converted to a string.  
+* `message`: the message to generate.
 * `p1` .. `p9`: additional parameters to display in the error message.
 
-A variable name enclosed in curly braces (`{` and `}`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
+A variable name enclosed in curly braces (`{` and `}`, e.g. `"Accessing value at index {index}."`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
 
 ## Instruction `profile`
 
@@ -242,6 +250,16 @@ Creates a snapshot of a given block. The instruction takes these parameters:
 * `name`: the name of the snapshot.
 
 There's no rate limit on creating snaphsots, but obviously there can be performance problems when the feature is abused.
+
+## Instruction `systemlog`
+
+This instruction writes a message into the game's log file. It is up to the user to avoid writing too many error messages into the file. The instruction takes these parameters:
+
+* `level`: the log level of the message, one of `debug`, `info`, `warning`, or `err`.
+* `message`: the message to generate.
+* `p1` .. `p9`: additional parameters to display in the error message.
+
+A variable name enclosed in curly braces (`{` and `}`, e.g. `"Accessing value at index {index}."`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
 
 # Custom game rules
 
