@@ -1,4 +1,4 @@
-package cardillan.mlogassertions.data;
+    package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
 import mindustry.Vars;
@@ -10,15 +10,28 @@ import mindustry.logic.LVar;
 import mindustry.logic.Senseable;
 
 public class SensorVars extends BaseVariableValues {
-    protected static String[] accessLabels = new String[LAccess.all.length];
+    protected static LAccess[] accesses = getAccesses();
+    protected static String[] accessLabels = new String[accesses.length];
     protected static String[] itemLabels = new String[Vars.content.items().size];
     protected static String[] liquidLabels = new String[Vars.content.liquids().size];
     protected static MappableContent[] items = new MappableContent[Vars.content.items().size];
     protected static MappableContent[] liquids = new MappableContent[Vars.content.liquids().size];
 
+    private static LAccess[] getAccesses() {
+        LAccess[] result = new LAccess[LAccess.all.length - 4];
+        int target = 0;
+        for (LAccess access : LAccess.all) {
+            switch (access) {
+                case cameraX, cameraY, cameraWidth, cameraHeight -> { }
+                default -> result[target++] = access;
+            }
+        }
+        return result;
+    }
+
     static {
         for (int i = 0; i < accessLabels.length; i++) {
-            accessLabels[i] = " @" + LAccess.all[i].name() + " ";
+            accessLabels[i] = " @" + accesses[i].name() + " ";
         }
 
         for (int i = 0; i < itemLabels.length; i++) {
@@ -89,7 +102,7 @@ public class SensorVars extends BaseVariableValues {
     @Override
     public boolean isObj(int index) {
         return index >= accessLabels.length ? LVar.invalid(entity.sense(contents[index - accessLabels.length]))
-                : entity.senseObject(LAccess.all[index]) != Senseable.noSensed || LVar.invalid(entity.sense(LAccess.all[index]));
+                : entity.senseObject(accesses[index]) != Senseable.noSensed || LVar.invalid(entity.sense(accesses[index]));
     }
 
     @Override
@@ -102,14 +115,14 @@ public class SensorVars extends BaseVariableValues {
         if (index >= accessLabels.length) {
             return null;
         } else {
-            Object result = entity.senseObject(LAccess.all[index]);
+            Object result = entity.senseObject(accesses[index]);
             return result == Senseable.noSensed ? null : result;
         }
     }
 
     @Override
     public double num(int index) {
-        double value = index >= accessLabels.length ? entity.sense(contents[index - accessLabels.length]) : entity.sense(LAccess.all[index]);
+        double value = index >= accessLabels.length ? entity.sense(contents[index - accessLabels.length]) : entity.sense(accesses[index]);
         return Double.isNaN(value) ? 0 : value;
     }
 
@@ -129,7 +142,7 @@ public class SensorVars extends BaseVariableValues {
 
     @Override
     public void eachObject(Cons<Object> getter) {
-        for (int index = 0; index < LAccess.all.length; index++) {
+        for (int index = 0; index < accesses.length; index++) {
             Object value = obj(index);
             if (value != null) getter.get(value);
         }

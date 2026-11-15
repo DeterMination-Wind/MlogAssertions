@@ -40,4 +40,7 @@ public class Constants {
     public static final String varsAlignment = "mlogdevtools-vars-alignment";
 
     public static final String startProfilerImmediatelly = "mlogdevtools-start-profiler-immediatelly";
+
+    public static final String logMessageLimit = "mlogdevtools-log-message-limit";
+    public static final String clearLogOnRestart = "mlogdevtools-clear-log-on-restart";
 }

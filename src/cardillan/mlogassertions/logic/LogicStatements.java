@@ -13,6 +13,8 @@ import mindustry.logic.*;
 import mindustry.logic.LStatements.JumpStatement;
 import mindustry.ui.Styles;
 
+import java.util.Arrays;
+
 public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
 
@@ -29,6 +31,7 @@ public class LogicStatements {
         register(ProfileStatement::new, ProfileStatement.opcode, ProfileStatement::read);
         register(RestartStatement::new, RestartStatement.opcode, RestartStatement::read);
         register(SnapshotStatement::new, SnapshotStatement.opcode, SnapshotStatement::read);
+        register(SystemLogStatement::new, SystemLogStatement.opcode, SystemLogStatement::read);
     }
 
     private static void register(Prov<LStatement> prov, String opcode, Func<String[], LStatement> parser) {
@@ -39,6 +42,13 @@ public class LogicStatements {
         LogicIO.allStatements.add(prov);
         LAssembler.customParsers.put(opcode, parser);
     }
+
+    private static final Log.LogLevel[] levels = {
+            Log.LogLevel.err,
+            Log.LogLevel.warn,
+            Log.LogLevel.info,
+            Log.LogLevel.debug,
+    };
 
     public static abstract class AbstractAssertStatement extends LStatement {
         final String name;
@@ -123,13 +133,16 @@ public class LogicStatements {
     public abstract static class AbstractMessageStatement extends AbstractAssertStatement {
         private final String opcode;
         private final boolean hasLevel;
+        private final boolean hasCategory;
         public Log.LogLevel level = Log.LogLevel.info;
+        public String category = "null";
         public String[] params = new String[10];
 
-        public AbstractMessageStatement(String opcode, String name, String message) {
+        public AbstractMessageStatement(String opcode, String name, String message, boolean hasLevel, boolean hasCategory) {
             super(name);
             this.opcode = opcode;
-            this.hasLevel = opcode.equals("log");
+            this.hasLevel = hasLevel;
+            this.hasCategory = hasCategory;
             params[0] = "\"" + message + " at #{@counter}.\"";
             for (int i = 1; i < params.length; i++) params[i] = "null";
         }
@@ -152,6 +165,10 @@ public class LogicStatements {
                 select(t, "level", levels, level, o -> level = o, 1, 80f);
             }
 
+            if (hasCategory) {
+                fields(t, "category", false, category, str -> category = str);
+            }
+
             field(t, params[0], str -> params[0] = str).width(LCanvas.getTargetWidth() - Scl.scl(20f)).padRight(3);
 
             if (expanded) {
@@ -172,13 +189,15 @@ public class LogicStatements {
             writer.start(builder);
             writer.write(opcode);
             if (hasLevel) writer.write(level.name());
-            for (String param : params) writer.write(param.isEmpty() ? "null" : param);
+            if (hasCategory) writer.write(category);
+            for (String param : params) writer.write(param == null || param.isEmpty() ? "null" : param);
             writer.end();
         }
 
         protected LStatement readTokens(String[] tokens) {
             int i = 1;
             if (hasLevel && tokens.length > i) level = Log.LogLevel.valueOf(tokens[i++]);
+            if (hasCategory && tokens.length > i) category = tokens[i++];
             for (int j = 0; j < 10; j++) {
                 if (tokens.length > i) params[j] = tokens[i++];
             }
@@ -531,7 +550,7 @@ public class LogicStatements {
         public static final String opcode = "error";
 
         public ErrorStatement() {
-            super(opcode, "Error", "Runtime error");
+            super(opcode, "Error", "Runtime error", false, false);
         }
 
         @Override
@@ -546,25 +565,18 @@ public class LogicStatements {
         }
     }
 
-    private static final Log.LogLevel[] levels = {
-            Log.LogLevel.err,
-            Log.LogLevel.warn,
-            Log.LogLevel.info,
-            Log.LogLevel.debug,
-    };
-
     public static class LogStatement extends AbstractMessageStatement {
         public static final String opcode = "log";
 
         public LogStatement() {
-            super(opcode, "Log", "Logging a message");
+            super(opcode, "Log", "Logging a message", true, true);
         }
 
         @Override
         public LExecutor.LInstruction build(LAssembler builder) {
             LVar[] vars = new LVar[10];
             for (int i = 0; i < params.length; i++) vars[i] = builder.var(params[i]);
-            return new LogicInstructions.LogI(level, vars);
+            return new LogicInstructions.LogI(level, builder.var(category), vars);
         }
 
         public static LStatement read(String[] tokens) {
@@ -704,6 +716,25 @@ public class LogicStatements {
             if (tokens.length > i) stmt.steps = tokens[i++];
             if (tokens.length > i) stmt.message = tokens[i++];
             return stmt;
+        }
+    }
+
+    public static class SystemLogStatement extends AbstractMessageStatement {
+        public static final String opcode = "systemlog";
+
+        public SystemLogStatement() {
+            super(opcode, "System Log", "Logging a message", true, false);
+        }
+
+        @Override
+        public LExecutor.LInstruction build(LAssembler builder) {
+            LVar[] vars = new LVar[10];
+            for (int i = 0; i < params.length; i++) vars[i] = builder.var(params[i]);
+            return new LogicInstructions.SystemLogI(level, vars);
+        }
+
+        public static LStatement read(String[] tokens) {
+            return new SystemLogStatement().readTokens(tokens);
         }
     }
 }

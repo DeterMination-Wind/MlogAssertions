@@ -7,6 +7,7 @@ import arc.scene.ui.Label;
 import arc.scene.ui.Slider;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
+import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
@@ -72,6 +73,12 @@ public class Settings {
                     i -> VarsDialog.significantDigits = i);
 
             t.checkPref(Constants.startProfilerImmediatelly, false);
+
+            steppedPref(t, Constants.logMessageLimit, 100, new int[]{0, 20, 50, 100, 200, 500, 1000, 2000, 5000},
+                    i -> i == 0 ? bundle(Constants.logMessageLimit, "disabled") : Integer.toString(i),
+                    i -> LogMessages.setLimit(i));
+
+            t.checkPref(Constants.clearLogOnRestart, true);
         });
 
         Vars.ui.settings.hidden(() -> {
@@ -88,6 +95,8 @@ public class Settings {
 
         VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
         VarsDialog.significantDigits = Core.settings.getInt(Constants.varsSignificantDigits);
+
+        LogMessages.setLimit(Core.settings.getInt(Constants.logMessageLimit));
     }
 
     private static String bundle(String key) {

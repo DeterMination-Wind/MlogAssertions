@@ -21,7 +21,7 @@ Settings for overriding instruction limit, by up to 1000 instructions, to make s
 
 A [[]accent]profiler[[]] for gathering statistics about program execution.
 
-Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a bbreakpoint, taking snaphots and managing profiling.
+Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a breakpoint, taking snaphots and managing profiling.
 
 Visual indication of stopped processors, processors executing a [[]accent]wait[[]] instruction, and failed runtime checks, directly on the map.
 

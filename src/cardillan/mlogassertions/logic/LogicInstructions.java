@@ -4,6 +4,7 @@ import arc.Core;
 import arc.util.Log;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
+import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.Snapshot;
 import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.ui.Assertions;
@@ -310,10 +311,12 @@ public class LogicInstructions {
 
     public static class LogI implements DevToolsInstruction {
         Log.LogLevel level = Log.LogLevel.info;
+        LVar category;
         public LVar[] vars = new LVar[10];
 
-        public LogI(Log.LogLevel level, LVar[] vars) {
+        public LogI(Log.LogLevel level, LVar category, LVar[] vars) {
             this.level = level;
+            this.category = category;
             this.vars = vars;
         }
 
@@ -332,7 +335,9 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Log.log(level, buildMessage(exec, "[Mlog Dev Tools] ", true, vars[0], vars));
+            LogMessages.addMessage(exec.build, level,
+                    category.isobj && category.objval == null ? "" : print(category),
+                    buildMessage(exec, "", true, vars[0], vars));
         }
     }
 
@@ -447,6 +452,34 @@ public class LogicInstructions {
                     InstrumentationEngine.startInstructionSnapshots(build, steps.numi(), master);
                 }
             }
+        }
+    }
+
+    public static class SystemLogI implements DevToolsInstruction {
+        Log.LogLevel level = Log.LogLevel.info;
+        public LVar[] vars = new LVar[10];
+
+        public SystemLogI(Log.LogLevel level, LVar[] vars) {
+            this.level = level;
+            this.vars = vars;
+        }
+
+        public SystemLogI() {
+        }
+
+        @Override
+        public LVar[] vars() {
+            return vars;
+        }
+
+        @Override
+        public boolean yields() {
+            return false;
+        }
+
+        @Override
+        public final void run(LExecutor exec) {
+            Log.log(level, buildMessage(exec, "[Mlog Dev Tools] ", true, vars[0], vars));
         }
     }
 

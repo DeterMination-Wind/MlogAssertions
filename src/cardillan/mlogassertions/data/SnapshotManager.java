@@ -31,7 +31,7 @@ public class SnapshotManager {
         });
 
         Events.on(EventType.BlockBuildEndEvent.class, e -> {
-            if (e.breaking && (e.tile.build instanceof LogicBuild || e.tile.build instanceof MemoryBuild)) {
+            if (e.breaking &&e.tile.build != null) {
                 snapshots.remove(e.tile.build);
             }
         });
@@ -176,11 +176,12 @@ public class SnapshotManager {
         return snapshot;
     }
 
-    private static class SnapshotRecord {
+    static class SnapshotRecord {
         final Queue<Snapshot> queue = new Queue<>();
         int size = 0;
 
         void add(Snapshot snapshot) {
+            adjustSize(maxSnapshots);
             queue.addFirst(snapshot);
             size += snapshot.recording() != null ? snapshot.recording().size : 1;
         }

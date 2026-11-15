@@ -237,6 +237,9 @@ public class VarsDialog extends BaseDialog {
 
             t.button(Icon.filters, style, this::viewOptions);
             t.button(Icon.edit, style, this::editCommands);
+            t.button(Icon2.log, style, () -> {
+                if (entity instanceof LogicBlock.LogicBuild build) new LogDialog(build).show();
+            }).get().setDisabled(() -> view.dataType() != EntityDataType.processor);
             t.button(Icon.chartBar, style, () -> {
                 if (entity instanceof LogicBlock.LogicBuild build) new ProfileDialog(build).show();
             }).get().setDisabled(() -> view.dataType() != EntityDataType.processor);
@@ -450,7 +453,7 @@ public class VarsDialog extends BaseDialog {
 
     private void help(Table t, TextureRegionDrawable icon1, TextureRegionDrawable icon2, String text) {
         if (icon2 == null) {
-            t.image(icon1).colspan(2).color(Color.lightGray);
+            t.table(t2 -> t2.image(icon1).center()).colspan(2).color(Color.lightGray);
         } else {
             t.image(icon1).color(Color.lightGray).padRight(4f);
             t.image(icon2).color(Color.lightGray).padLeft(4f);
@@ -475,6 +478,7 @@ public class VarsDialog extends BaseDialog {
                         : "Navigate to the previous/next snapshot (also the PgUp/PgDn and Home/End keys).");
                 help(t, Icon.filters, "Customize the view (for the duration of the session).");
                 help(t, Icon.edit, "Export, import or modify the data of this block.");
+                help(t, Icon2.log, "Show the current processor's log.");
                 help(t, Icon.chartBar, "Profile the current processor's execution.");
                 help(t, Icon.pause, Icon.play, "Pause/resume the game.");
                 help(t, Icon.folderOpen, "Show a list of this block's snapshots.");
@@ -561,6 +565,11 @@ public class VarsDialog extends BaseDialog {
                 t.defaults().size(360f, 60f).left();
 
                 if (SnapshotManager.maxSnapshots <= 0 && entity instanceof LogicBlock.LogicBuild build) {
+                    t.button("Log", Icon2.log, style, () -> {
+                        new LogDialog(build).show();
+                        dialog.hide();
+                    }).marginLeft(12f).row();
+
                     t.button("Profiler", Icon.chartBar, style, () -> {
                         new ProfileDialog(build).show();
                         dialog.hide();

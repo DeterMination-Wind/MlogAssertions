@@ -110,18 +110,6 @@ public class InstrumentationEngine {
                 }
             });
 
-            initialized = true;
-
-            Events.on(EventType.ResetEvent.class, e -> {
-                instrumentations.clear();
-            });
-
-            Events.on(EventType.BlockBuildEndEvent.class, e -> {
-                if (e.breaking && (e.tile.build instanceof LogicBuild build)) {
-                    instrumentations.remove(build);
-                }
-            });
-
             Events.on(EventType.ConfigEvent.class, e -> {
                 if (e.tile instanceof LogicBuild build) {
                     if (CustomGameRules.autoProfile) {
@@ -135,6 +123,8 @@ public class InstrumentationEngine {
                     }
                 }
             });
+
+            initialized = true;
         } catch (ReflectiveOperationException e) {
             Log.err("[Mlog Dev Tools] Failed to initialize instrumentation.", e);
         }
