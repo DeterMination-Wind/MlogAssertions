@@ -6,6 +6,7 @@ import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
 import cardillan.mlogassertions.Accessor;
+import cardillan.mlogassertions.logic.InstrumentationEngine;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
@@ -29,6 +30,7 @@ public class LogicDialogAddon {
     public static Field executorField;
     public static Field wasPausedField;
     public static GlobalVarsDialog globalsDialog;
+    static LogicBlock.LogicBuild editedBuild = null;
 
     static int tapCount = 0;
     static long timeTapped1, timeTapped2;
@@ -78,6 +80,12 @@ public class LogicDialogAddon {
 
 
         Vars.ui.logic.shown(LogicDialogAddon::setupLogicDialog);
+        Vars.ui.logic.hidden(() -> {
+            if (editedBuild != null) {
+                InstrumentationEngine.restoreInstrumentation(editedBuild);
+                editedBuild = null;
+            }
+        });
 
         Events.on(EventType.ResizeEvent.class, event -> {
             if (Vars.ui.logic.isShown() && Core.scene.getDialog() == Vars.ui.logic) {
@@ -95,6 +103,7 @@ public class LogicDialogAddon {
         try {
             executor = (LExecutor) executorField.get(Vars.ui.logic);
             wasPaused = (boolean) wasPausedField.get(Vars.ui.logic);
+            editedBuild = executor.build;
         } catch (IllegalAccessException e) {
             Log.err("[Mlog Dev Tools] Cannot access LogicDialog fields", e);
             return;

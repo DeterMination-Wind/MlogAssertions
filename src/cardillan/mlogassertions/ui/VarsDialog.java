@@ -238,7 +238,7 @@ public class VarsDialog extends BaseDialog {
             t.button(Icon.filters, style, this::viewOptions);
             t.button(Icon.edit, style, this::editCommands);
             t.button(Icon2.log, style, () -> {
-                if (entity instanceof LogicBlock.LogicBuild build) new LogDialog(build).show();
+                if (entity instanceof LogicBlock.LogicBuild build) LogDialog.show(build);
             }).get().setDisabled(() -> view.dataType() != EntityDataType.processor);
             t.button(Icon.chartBar, style, () -> {
                 if (entity instanceof LogicBlock.LogicBuild build) new ProfileDialog(build).show();
@@ -566,7 +566,7 @@ public class VarsDialog extends BaseDialog {
 
                 if (SnapshotManager.maxSnapshots <= 0 && entity instanceof LogicBlock.LogicBuild build) {
                     t.button("Log", Icon2.log, style, () -> {
-                        new LogDialog(build).show();
+                        LogDialog.show(build);
                         dialog.hide();
                     }).marginLeft(12f).row();
 

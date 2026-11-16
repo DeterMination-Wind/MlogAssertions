@@ -112,21 +112,25 @@ public class InstrumentationEngine {
 
             Events.on(EventType.ConfigEvent.class, e -> {
                 if (e.tile instanceof LogicBuild build) {
-                    if (CustomGameRules.autoProfile) {
-                        startProfiling(build);
-                    } else {
-                        Instrumentation instrumentation = instrumentations.get(build);
-                        if (instrumentation != null && build.executor.instructions != instrumentation.instructions) {
-                            instrumentations.remove(build);
-                            if (instrumentation.profiling) startProfiling(build);
-                        }
-                    }
+                    restoreInstrumentation(build);
                 }
             });
 
             initialized = true;
         } catch (ReflectiveOperationException e) {
             Log.err("[Mlog Dev Tools] Failed to initialize instrumentation.", e);
+        }
+    }
+
+    public static void restoreInstrumentation(LogicBuild build) {
+        if (CustomGameRules.autoProfile) {
+            startProfiling(build);
+        } else {
+            Instrumentation instrumentation = instrumentations.get(build);
+            if (instrumentation != null && build.executor.instructions != instrumentation.instructions) {
+                instrumentations.remove(build);
+                if (instrumentation.profiling) startProfiling(build);
+            }
         }
     }
 

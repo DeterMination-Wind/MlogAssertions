@@ -109,7 +109,7 @@ public class BuildConfiguration {
                             }
                             table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
                         } else if (build instanceof LogicBuild logic) {
-                            table.button(Icon2.log, Styles.cleari, () -> new LogDialog(logic).show()).size(40);
+                            table.button(Icon2.log, Styles.cleari, () -> LogDialog.show(logic)).size(40);
                             table.button(Icon.pencil, Styles.cleari, logic::showEditDialog).size(40);
                             table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
                         } else {

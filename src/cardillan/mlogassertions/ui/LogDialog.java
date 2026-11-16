@@ -39,11 +39,15 @@ public class LogDialog extends BaseDialog {
     private LogMessage[] messages;
     private int lastWidth;
 
-    public LogDialog(LogicBuild build) {
-        super("Log");
+    public static void show(LogicBuild build) {
+        new LogDialog(build, LogMessages.getMessages(build)).show();
+    }
+
+    private LogDialog(LogicBuild build, LogMessage[] messages) {
+        super("Log: " + messages.length + " messages");
 
         this.build = build;
-        this.messages = LogMessages.getMessages(build);
+        this.messages = messages;
         this.shouldPause = true;
 
         enabledCategories.clear();
@@ -117,6 +121,7 @@ public class LogDialog extends BaseDialog {
     }
 
     private void rebuildMessages() {
+        title.setText("Log: " + messages.length + " messages");
         lastWidth = Core.graphics.getWidth() / 16;
         messageList.clear();
         messageList.top().left();
@@ -186,7 +191,7 @@ public class LogDialog extends BaseDialog {
         };
     }
 
-    private static Color color(LogLevel level) {
+    private static Color color(Log.LogLevel level) {
         return switch (level) {
             case err -> Color.salmon;
             case warn -> Color.gold;
