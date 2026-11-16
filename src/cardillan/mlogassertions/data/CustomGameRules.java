@@ -52,7 +52,7 @@ public class CustomGameRules {
     }
 
     public static boolean isAutoProfile(Rules rules) {
-        return Boolean.valueOf(rules.tags.get(Constants.rulesAutoProfile, "false"));
+        return Boolean.parseBoolean(rules.tags.get(Constants.rulesAutoProfile, "false"));
     }
 
     private static void addRules(CustomRulesDialog dialog) {

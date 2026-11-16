@@ -2,17 +2,21 @@ package cardillan.mlogassertions.logic;
 
 import arc.graphics.Color;
 import arc.struct.Seq;
+import cardillan.mlogassertions.auxiliary.AuxiliaryData;
+import cardillan.mlogassertions.data.CustomGameRules;
 import cardillan.mlogassertions.data.Snapshot;
 import cardillan.mlogassertions.data.SnapshotManager;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LStatement;
 import mindustry.logic.LVar;
+import mindustry.logic.Senseable;
 import mindustry.world.blocks.logic.LogicBlock;
+import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 import java.util.Arrays;
 import java.util.BitSet;
 
-public class Instrumentation {
+public class Instrumentation implements AuxiliaryData {
     public final LExecutor executor;
 
     // Profiling: constant data
@@ -39,8 +43,8 @@ public class Instrumentation {
     public Snapshot master;
     public int snapshotSteps = 0;
 
-    public Instrumentation(LExecutor executor) {
-        this.executor = executor;
+    public Instrumentation(Senseable object) {
+        this.executor = ((LogicBuild)object).executor;
         this.size = executor.instructions.length;
         this.instructions = executor.instructions;
         this.maxInstructionScale = ((LogicBlock)executor.build.block).maxInstructionScale;
@@ -52,6 +56,8 @@ public class Instrumentation {
         this.colors = new Color[size];
         this.source = new String[size];
 
+        // Parsing only serves to obatin a source code for each instruction
+        // It is not possible to retrieve the source code from individual LInstruction instances
         Seq<LStatement> parsedSeq = InstrumentationEngine.parse(executor.build.code, executor.privileged);
 
         for (int i = 0; i < instructions.length; i++) {
@@ -63,17 +69,22 @@ public class Instrumentation {
         }
     }
 
+    @Override
+    public AuxiliaryData reset(Senseable object) {
+        LogicBuild build = (LogicBuild) object;
+        if (instructions == build.executor.instructions) return this;
+
+        Instrumentation instrumentation = new Instrumentation(build);
+        instrumentation.profiling = CustomGameRules.autoProfile || profiling;
+        return instrumentation;
+    }
+
     public void startProfiling() {
         profiling = true;
     }
 
     public void stopProfiling() {
         profiling = false;
-    }
-
-    public void stopAll() {
-        profiling = false;
-        snapshotSteps = 0;
     }
 
     public void clearProfilingData() {
@@ -116,7 +127,7 @@ public class Instrumentation {
             double curTime = 1f;
             if (exec.yield) {
                 // Yielding: account for possibly lost execution quota
-                LogicBlock.LogicBuild build = exec.build;
+                LogicBuild build = exec.build;
                 double futureAccumulator = build.accumulator + build.edelta() * build.ipt;
                 double loss = futureAccumulator - maxInstructionScale * build.ipt;
                 curTime = Math.max(0, loss);

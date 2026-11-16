@@ -9,7 +9,7 @@ import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.SnapshotManager;
-import cardillan.mlogassertions.ui.Assertions;
+import cardillan.mlogassertions.ui.MapIndicators;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.VarsDialog;
 import mindustry.Vars;
@@ -33,23 +33,23 @@ public class Settings {
 
             if (canSetInstructions()) {
                 t.sliderPref(Constants.maxInstructions, 1000, 1000, 2000, 100,
-                        i -> Integer.toString(i),
+                        Integer::toString,
                         i -> LExecutor.maxInstructions = i);
             }
 
             t.sliderPref(Constants.minWaitTimeUpdate, 1000, 0, 10000, 500,
                     i -> i == 0 ? bundle(Constants.minWaitTimeUpdate, "none") : Double.toString(i / 1000.0),
-                    i -> Assertions.minWaitTimeUpdate = i);
+                    i -> MapIndicators.minWaitTimeUpdate = i);
 
             steppedPref(t,Constants.processorUpdatesPerTick, 50, new int[]{1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
-                    i -> Integer.toString(i),
-                    i -> Assertions.processorUpdatesPerTick = i);
+                    Integer::toString,
+                    i -> MapIndicators.processorUpdatesPerTick = i);
 
             t.sliderPref(Constants.warnEffectFrequency, 0, -5, 60, 5,
                     i -> i < 0 ? bundle(Constants.warnEffectFrequency, "never") :
                             i == 0 ? bundle(Constants.warnEffectFrequency, "once") :
                                     format(Constants.warnEffectFrequency, "every", i),
-                    i -> Assertions.warnEffectFrequency = i);
+                    i -> MapIndicators.warnEffectFrequency = i);
 
             t.sliderPref(Constants.tripleTapSpeed, 500, 0, 3000, 50,
                     i -> i == 0 ? bundle(Constants.tripleTapSpeed, "disabled") :
@@ -69,34 +69,35 @@ public class Settings {
                     i -> VarsDialog.updateFrequency = i);
 
             t.sliderPref(Constants.varsSignificantDigits, 7, 3, 15, 1,
-                    i -> Integer.toString(i),
+                    Integer::toString,
                     i -> VarsDialog.significantDigits = i);
 
             t.checkPref(Constants.startProfilerImmediatelly, false);
 
             steppedPref(t, Constants.logMessageLimit, 100, new int[]{0, 20, 50, 100, 200, 500, 1000, 2000, 5000},
                     i -> i == 0 ? bundle(Constants.logMessageLimit, "disabled") : Integer.toString(i),
-                    i -> LogMessages.setLimit(i));
+                    i -> LogMessages.maxMessages = i);
 
             t.checkPref(Constants.clearLogOnRestart, true);
         });
 
         Vars.ui.settings.hidden(() -> {
             SnapshotManager.updateLimit();
+            LogMessages.updateLimit();
         });
 
         if (canSetInstructions()) {
             LExecutor.maxInstructions = Core.settings.getInt(Constants.maxInstructions);
         }
-        Assertions.minWaitTimeUpdate = Core.settings.getInt(Constants.minWaitTimeUpdate);
-        Assertions.processorUpdatesPerTick = Core.settings.getInt(Constants.processorUpdatesPerTick, 50);
-        Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
+        MapIndicators.minWaitTimeUpdate = Core.settings.getInt(Constants.minWaitTimeUpdate);
+        MapIndicators.processorUpdatesPerTick = Core.settings.getInt(Constants.processorUpdatesPerTick, 50);
+        MapIndicators.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
         SnapshotManager.maxSnapshots = Core.settings.getInt(Constants.snapshotLimit);
 
         VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
         VarsDialog.significantDigits = Core.settings.getInt(Constants.varsSignificantDigits);
 
-        LogMessages.setLimit(Core.settings.getInt(Constants.logMessageLimit));
+        LogMessages.maxMessages = Core.settings.getInt(Constants.logMessageLimit);
     }
 
     private static String bundle(String key) {

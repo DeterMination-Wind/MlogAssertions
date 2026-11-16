@@ -9,11 +9,12 @@ import arc.math.geom.Rect;
 import arc.scene.ui.layout.Scl;
 import arc.struct.FloatSeq;
 import arc.struct.ObjectMap;
-import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.pooling.Pools;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
+import cardillan.mlogassertions.auxiliary.AuxiliaryData;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
 import cardillan.mlogassertions.data.MapIndex;
 import cardillan.mlogassertions.logic.Instrumentation;
 import cardillan.mlogassertions.logic.LogicInstructions;
@@ -24,6 +25,7 @@ import mindustry.game.EventType;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
 import mindustry.logic.LExecutor;
+import mindustry.logic.Senseable;
 import mindustry.ui.Fonts;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
@@ -31,16 +33,13 @@ import static arc.Core.camera;
 import static arc.Core.settings;
 import static mindustry.Vars.tilesize;
 
-public class Assertions {
+public class MapIndicators {
     public static int minWaitTimeUpdate = 1000;
     public static int processorUpdatesPerTick = 50;
     public static int warnEffectFrequency = 0;
     public static float layer = Layer.darkness + 1;
     public static float waitLayer = Layer.turret + 1;
     public static float textWidth = 110f;
-
-    // wait is a special case, recognized by comparison to this instance
-    static final String WAIT = new String("W");
 
     // Color of the displayed text/warning effect
     static final Color color = Color.coral;
@@ -53,43 +52,17 @@ public class Assertions {
     // Active messages
     static final ObjectMap<LogicBuild, String> blocks = new ObjectMap<>();
 
-    // Invalid blocks
-    static final Seq<LogicBuild> invalidBlocks = new Seq<>();
-
     // The breakpoint context
     static LogicBuild breakpointProc;
-    static String breakpointMessage;
+    static IndicatorData breakpointMessage;
     static final FloatSeq accumulators = new FloatSeq();
 
     // The next time the effect should be run (game time)
     static double nextWarnEffect = 0;
 
     public static void init() {
-        Events.on(EventType.ResetEvent.class, e -> {
-            blocks.clear();
-            invalidBlocks.clear();
-            nextWarnEffect = 0;
-        });
-
-        Events.on(EventType.WorldLoadEndEvent.class, e -> {
-            blocks.clear();
-            invalidBlocks.clear();
-            nextWarnEffect = 0;
-        });
-
-        Events.on(EventType.BlockBuildEndEvent.class, e -> {
-            if (e.tile.build instanceof LogicBuild build) {
-                if (e.breaking) {
-                    blocks.remove(build);
-                }
-            }
-        });
-
-        Events.on(EventType.ConfigEvent.class, e -> {
-            if (e.tile instanceof LogicBuild build) {
-                reset(build);
-            }
-        });
+        Events.on(EventType.ResetEvent.class, e -> nextWarnEffect = 0);
+        Events.on(EventType.WorldLoadEndEvent.class, e -> nextWarnEffect = 0);
 
         Events.on(EventType.StateChangeEvent.class, e -> {
             if (e.from == GameState.State.paused) {
@@ -106,14 +79,10 @@ public class Assertions {
             narrowBounds.grow(tilesize * 2f);
             wideBounds.grow(tilesize * 10f);
 
-            blocks.each(Assertions::draw);
+            AuxiliaryStore.each(AuxiliaryStore.indicatorData, MapIndicators::draw);
             if (breakpointProc != null) {
                 draw(breakpointProc, breakpointMessage);
             }
-
-            invalidBlocks.each(blocks::remove);
-            MapIndex.processors.removeAll(invalidBlocks);
-            invalidBlocks.clear();
         });
 
         // Reattach the camera if the game was closed while paused
@@ -127,21 +96,16 @@ public class Assertions {
         }
     }
 
-    public static void setWait(LogicBuild block) {
-        if (blocks.get(block) != WAIT) {
-            blocks.put(block, WAIT);
-        }
-    }
-
     public static void setMessage(LogicBuild block, Prov<String> message) {
-        String prev = blocks.get(block);
-        if (prev == null || prev == WAIT) {
-            String str = message.get();
-            blocks.put(block, str == null ? "<error>" : str);
+        AuxiliaryStore.store(block, AuxiliaryStore.indicatorData, r -> {
+            if (r.text == null) {
+                String str = message.get();
+                r.setText(str == null ? "<error>" : str);
 
-            // Just this once
-            if (warnEffectFrequency == 0) effect(block);
-        }
+                // Just this once
+                if (warnEffectFrequency == 0) effect(block);
+            }
+        });
     }
 
     public static void breakpoint(LogicBuild processor, String message) {
@@ -171,12 +135,13 @@ public class Assertions {
         });
 
         breakpointProc = processor;
-        breakpointMessage = message;
+        breakpointMessage = new IndicatorData(processor);
+        breakpointMessage.text = message;
         blocks.remove(processor);
     }
 
     public static void reset(LogicBuild block) {
-        blocks.remove(block);
+        AuxiliaryStore.remove(block, AuxiliaryStore.indicatorData);
     }
 
     private static void effect(LogicBuild block) {
@@ -195,7 +160,7 @@ public class Assertions {
         totalUpdates -= updates;
 
         if (MapIndex.processors.size <= updates) {
-            MapIndex.processors.each(Assertions::check);
+            MapIndex.processors.each(MapIndicators::check);
         } else {
             for (int i = 0; i < updates; i++) {
                 if (checkIndex >= MapIndex.processors.size) checkIndex = 0;
@@ -214,11 +179,10 @@ public class Assertions {
 
     private static void check(LogicBuild block) {
         if (block.tile.build != block) {
-            invalidBlocks.add(block);
             return;
         } else if (block.executor == null || block.executor.counter == null) {
             // Not yet ready
-            reset(block);
+            AuxiliaryStore.remove(block, AuxiliaryStore.indicatorData);
             return;
         }
 
@@ -237,18 +201,19 @@ public class Assertions {
                 setMessage(block, () -> Core.bundle.format("assertions.stoppedAt", ix));
                 return;
             }
-            if (minWaitTimeUpdate > 0 && instruction instanceof LExecutor.WaitI w && 1000 * w.value.num() >= minWaitTimeUpdate) {
-                setWait(block);
+            if (minWaitTimeUpdate > 0 && instruction instanceof LExecutor.WaitI wait && 1000 * wait.value.num() >= minWaitTimeUpdate) {
+                AuxiliaryStore.store(block, AuxiliaryStore.indicatorData, r -> r.setWait(wait));
                 return;
             }
         }
 
-        reset(block);
+        AuxiliaryStore.remove(block, AuxiliaryStore.indicatorData);
     }
 
-    private static void draw(LogicBuild block, String message) {
+    private static void draw(Senseable object, IndicatorData data) {
+        LogicBuild block = (LogicBuild) object;
+        String message = data.text;
         if (block.tile.build != block) {
-            invalidBlocks.add(block);
             return;
         }
 
@@ -257,9 +222,9 @@ public class Assertions {
         if (!wideBounds.overlaps(hitbox)) return;
 
         // This is a wait indication
-        if (message == WAIT) {
-            if (narrowBounds.overlaps(hitbox)) {
-                drawWait(block);
+        if (data.wait != null) {
+            if (data.wait.curTime > 0 || data.curTime == 0 && narrowBounds.overlaps(hitbox)) {
+                drawWait(block, data.wait);
             }
             return;
         }
@@ -292,29 +257,51 @@ public class Assertions {
         Pools.free(l);
     }
 
-    private static void drawWait(LogicBuild block) {
+    private static void drawWait(LogicBuild block, LExecutor.WaitI wait) {
         int sides = 60;
-        int ix = (int) block.executor.counter.numval;
-        LExecutor.LInstruction[] instructions = block.executor.instructions;
-        if (ix >= 0 && ix < instructions.length && instructions[ix] instanceof LExecutor.WaitI w) {
-            float total = (float) w.value.num();
-            float current = w.curTime;
-            float arc = current / total;
+        float total = (float) wait.value.num();
+        float current = wait.curTime;
+        float arc = current / total;
 
-            float x = block.getX();
-            float y = block.getY();
+        float x = block.getX();
+        float y = block.getY();
 
-            Draw.z(waitLayer);
-            float z = Drawf.text();
-            int blockSize = block.tile.block().size;
-            if (arc > 0.01) {
-                Draw.color(Color.white);
-                Fill.arc(x, y, blockSize * 2.1f - 0.5f, arc, 90 - 360f * arc, sides);
-            }
+        Draw.z(waitLayer);
+        float z = Drawf.text();
+        int blockSize = block.tile.block().size;
+        if (arc > 0.01) {
             Draw.color(Color.white);
-            Lines.stroke((blockSize + 1) * 0.25f);
-            Lines.poly(x, y, sides, block.tile.block().size * 2.5f);
-            Draw.z(z);
+            Fill.arc(x, y, blockSize * 2.1f - 0.5f, arc, 90 - 360f * arc, sides);
+        }
+        Draw.color(Color.white);
+        Lines.stroke((blockSize + 1) * 0.25f);
+        Lines.poly(x, y, sides, block.tile.block().size * 2.5f);
+        Draw.z(z);
+    }
+
+    public static class IndicatorData implements AuxiliaryData {
+        String text;
+        LExecutor.WaitI wait;
+        float curTime;
+
+        public IndicatorData(Senseable object) {
+        }
+
+        public void setWait(LExecutor.WaitI wait) {
+            this.wait = wait;
+            this.text = null;
+            this.curTime = wait.curTime;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+            this.wait = null;
+        }
+
+        @Override
+        public AuxiliaryData reset(Senseable object) {
+            // Remove everything on reset
+            return null;
         }
     }
 }

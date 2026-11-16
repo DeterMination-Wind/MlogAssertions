@@ -6,6 +6,7 @@ import arc.struct.ObjectMap;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
 import arc.util.Log;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
 import cardillan.mlogassertions.data.CustomGameRules;
 import cardillan.mlogassertions.data.Snapshot;
 import cardillan.mlogassertions.data.SnapshotManager;
@@ -32,8 +33,6 @@ public class InstrumentationEngine {
     static final ObjectMap<Class<?>, Field[]> varFields = new ObjectMap<>();
     static final ObjectMap<Class<?>, LCategory> categories = new ObjectMap<>();
     static final ObjectSet<Class<?>> noYielding = new ObjectSet<>();
-
-    static final ObjectMap<LogicBuild, Instrumentation> instrumentations = new ObjectMap<>();
 
     public static void init() {
         try {
@@ -98,39 +97,15 @@ public class InstrumentationEngine {
             registerInstruction(WaitI.class, new WaitStatement(), true);
             registerInstruction(WriteI.class, new WriteStatement());
 
-            Events.on(EventType.ResetEvent.class, e -> instrumentations.clear());
-
             Events.on(EventType.BlockBuildEndEvent.class, e -> {
-                if (e.tile.build instanceof LogicBuild build) {
-                    if (e.breaking) {
-                        instrumentations.remove(build);
-                    } else if (CustomGameRules.autoProfile) {
-                        startProfiling(build);
-                    }
-                }
-            });
-
-            Events.on(EventType.ConfigEvent.class, e -> {
-                if (e.tile instanceof LogicBuild build) {
-                    restoreInstrumentation(build);
+                if (CustomGameRules.autoProfile && e.tile.build instanceof LogicBuild build) {
+                    startProfiling(build);
                 }
             });
 
             initialized = true;
         } catch (ReflectiveOperationException e) {
             Log.err("[Mlog Dev Tools] Failed to initialize instrumentation.", e);
-        }
-    }
-
-    public static void restoreInstrumentation(LogicBuild build) {
-        if (CustomGameRules.autoProfile) {
-            startProfiling(build);
-        } else {
-            Instrumentation instrumentation = instrumentations.get(build);
-            if (instrumentation != null && build.executor.instructions != instrumentation.instructions) {
-                instrumentations.remove(build);
-                if (instrumentation.profiling) startProfiling(build);
-            }
         }
     }
 
@@ -159,16 +134,16 @@ public class InstrumentationEngine {
         return getInstrumentation(build, true, Instrumentation::startProfiling);
     }
 
-    public static Instrumentation stopProfiling(LogicBuild build) {
-        return getInstrumentation(build, false, Instrumentation::stopProfiling);
-    }
-
-    public static Instrumentation stopAll(LogicBuild build) {
-        return getInstrumentation(build, false, Instrumentation::stopAll);
+    public static void stopProfiling(LogicBuild build) {
+        getInstrumentation(build, false, Instrumentation::stopProfiling);
     }
 
     public static Instrumentation clearProfilingData(LogicBuild build) {
         return getInstrumentation(build, false, Instrumentation::clearProfilingData);
+    }
+
+    public static void remove(LogicBuild build) {
+        AuxiliaryStore.remove(build, AuxiliaryStore.instrumentation);
     }
 
     static Seq<LStatement> parse(String code, boolean privileged) {
@@ -229,17 +204,12 @@ public class InstrumentationEngine {
     public static Instrumentation getInstrumentation(LogicBuild build, boolean instrument, Cons<Instrumentation> action) {
         if (!initialized || build.executor.instructions.length == 0 || !build.displayable()) return null;
 
-        Instrumentation instrumentation = instrumentations.get(build);
-        if (instrumentation == null || instrumentation.instructions != build.executor.instructions) {
-            if (!instrument) {
-                instrumentations.remove(build);
-                return null;
-            }
-            instrumentation = new Instrumentation(build.executor);
-            instrumentations.put(build, instrumentation);
+        if (instrument) {
+            return AuxiliaryStore.store(build, AuxiliaryStore.instrumentation, action);
+        } else if (action != null) {
+            return AuxiliaryStore.process(build, AuxiliaryStore.instrumentation, action);
+        } else {
+            return null;
         }
-
-        if (action != null && instrumentation != null) action.get(instrumentation);
-        return instrumentation;
     }
 }

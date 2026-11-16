@@ -315,7 +315,7 @@ public class ProfileDialog extends BaseDialog {
 
     private void restart() {
         build.updateCode(build.code);
-        InstrumentationEngine.clearProfilingData(build);
+        InstrumentationEngine.remove(build);
         instrumentation = InstrumentationEngine.startProfiling(build);
         setup();
     }

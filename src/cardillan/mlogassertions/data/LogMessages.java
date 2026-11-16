@@ -1,71 +1,40 @@
 package cardillan.mlogassertions.data;
 
 import arc.Core;
-import arc.Events;
-import arc.struct.ObjectMap;
 import arc.struct.Queue;
 import arc.util.Log;
 import arc.util.Nullable;
 import cardillan.mlogassertions.Constants;
-import mindustry.game.EventType;
+import cardillan.mlogassertions.auxiliary.AuxiliaryData;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
+import mindustry.logic.Senseable;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 public class LogMessages {
     public static int maxMessages = 100;
-    private static final ObjectMap<LogicBuild, LoggingData> loggingData = new ObjectMap<>();
 
-    public static void init() {
-        Events.on(EventType.ResetEvent.class, e -> {
-            loggingData.clear();
-        });
-
-        Events.on(EventType.BlockBuildEndEvent.class, e -> {
-            if (e.breaking && (e.tile.build instanceof LogicBuild build)) {
-                loggingData.remove(build);
-            }
-        });
-    }
-
-    public static void setLimit(int maxMessages) {
-        LogMessages.maxMessages = maxMessages;
-
+    public static void updateLimit() {
         if (maxMessages == 0) {
-            loggingData.clear();
+            AuxiliaryStore.clear(AuxiliaryStore.loggingData);
         } else {
-            loggingData.each((b, q) -> {while (q.messages.size > maxMessages) q.messages.removeFirst();});
+            AuxiliaryStore.each(AuxiliaryStore.loggingData, (o, r) -> r.adjustSize(maxMessages));
         }
-    }
-
-    private static Queue<LogMessage> getMessages(LogicBuild build, boolean create) {
-        LoggingData data = loggingData.get(build);
-        if (data == null || data.instructions != build.executor.instructions && Core.settings.getBool(Constants.clearLogOnRestart, true)) {
-            if (!create) {
-                loggingData.remove(build);
-                return null;
-            } else {
-                data = new LoggingData(new Queue<>(), build.executor.instructions);
-                loggingData.put(build, data);
-            }
-        }
-        return data.messages;
     }
 
     public static void clear(LogicBuild build) {
-        Queue<LogMessage> messages = getMessages(build, false);
-        if (messages != null) messages.clear();
+        AuxiliaryStore.remove(build, AuxiliaryStore.loggingData);
     }
 
     public static void addMessage(LogicBuild build, Log.LogLevel level, @Nullable String category, String message) {
         if (maxMessages > 0) {
-            Queue<LogMessage> messages = getMessages(build, true);
-            messages.add(new LogMessage(Core.graphics.getFrameId(), level, category, message));
-            if (messages.size > maxMessages) messages.removeFirst();
+            AuxiliaryStore.store(build, AuxiliaryStore.loggingData,
+                    data -> data.add(Core.graphics.getFrameId(), level, category, message));
         }
     }
 
     public static LogMessage[] getMessages(LogicBuild build) {
-        Queue<LogMessage> messages = getMessages(build, false);
-        return messages == null ? new LogMessage[0] : messages.toArray(LogMessage.class);
+        LoggingData data = AuxiliaryStore.get(build, AuxiliaryStore.loggingData);
+        return data == null ? new LogMessage[0] : data.messages.toArray(LogMessage.class);
     }
 
     public static class LogMessage {
@@ -82,13 +51,31 @@ public class LogMessages {
         }
     }
 
-    private static class LoggingData {
-        final Queue<LogMessage> messages;
-        final Object instructions;
+    public static class LoggingData implements AuxiliaryData {
+        final Queue<LogMessage> messages = new Queue<>();
 
-        LoggingData(Queue<LogMessage> messages, Object instructions) {
-            this.messages = messages;
-            this.instructions = instructions;
+        public LoggingData(Senseable object) {
+        }
+
+        @Override
+        public AuxiliaryData reset(Senseable object) {
+            if (Core.settings.getBool(Constants.clearLogOnRestart, true)) {
+                messages.clear();
+            }
+            return this;
+        }
+        public void add(long frameId, Log.LogLevel level, String category, String message) {
+            messages.add(new LogMessage(frameId, level, category, message));
+            if (messages.size > maxMessages) {
+                messages.removeFirst();
+            }
+        }
+
+        void adjustSize(int maxMessages) {
+            if (messages.size > maxMessages) {
+                while (messages.size > maxMessages) messages.removeFirst();
+                messages.shrink();
+            }
         }
     }
 }

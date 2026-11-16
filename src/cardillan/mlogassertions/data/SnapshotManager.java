@@ -1,13 +1,13 @@
 package cardillan.mlogassertions.data;
 
-import arc.Events;
 import arc.struct.ObjectMap;
 import arc.struct.ObjectSet;
 import arc.struct.Queue;
 import arc.struct.Seq;
 import cardillan.mlogassertions.logic.SnapshotType;
+import cardillan.mlogassertions.auxiliary.AuxiliaryData;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
 import mindustry.ai.types.LogicAI;
-import mindustry.game.EventType;
 import mindustry.gen.Building;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
@@ -24,24 +24,11 @@ public class SnapshotManager {
     // Snapshots
     private static final ObjectMap<Senseable, SnapshotRecord> snapshots = new ObjectMap<>();
 
-    public static void init() {
-        Events.on(EventType.ResetEvent.class, e -> {
-            snapshots.clear();
-            id = 0;
-        });
-
-        Events.on(EventType.BlockBuildEndEvent.class, e -> {
-            if (e.breaking &&e.tile.build != null) {
-                snapshots.remove(e.tile.build);
-            }
-        });
-    }
-
     public static void updateLimit() {
         if (maxSnapshots == 0) {
-            deleteAll();
+            AuxiliaryStore.clear(AuxiliaryStore.snapshotRecord);
         } else {
-            snapshots.each((b, q) -> q.adjustSize(maxSnapshots));
+            AuxiliaryStore.each(AuxiliaryStore.snapshotRecord, (o, r) -> r.adjustSize(maxSnapshots));
         }
     }
 
@@ -52,22 +39,16 @@ public class SnapshotManager {
     }
 
     public static boolean hasSnapshots(Senseable entity) {
-        SnapshotRecord record = snapshots.get(entity);
+        SnapshotRecord record = AuxiliaryStore.get(entity, AuxiliaryStore.snapshotRecord);
         return record != null && record.queue.size > 0;
     }
 
-    public static SnapshotRecord getRecord(Senseable entity) {
-        if (snapshots.containsKey(entity)) {
-            return snapshots.get(entity);
-        } else {
-            SnapshotRecord snapshotRecord = new SnapshotRecord();
-            snapshots.put(entity, snapshotRecord);
-            return snapshotRecord;
-        }
+    private static SnapshotRecord getExisting(Senseable object) {
+        return AuxiliaryStore.create(object, AuxiliaryStore.snapshotRecord);
     }
 
     public static Queue<Snapshot> get(Senseable entity) {
-        return getRecord(entity).queue;
+        return getExisting(entity).queue;
     }
 
     public static Snapshot create(Senseable entity, String name) {
@@ -142,7 +123,7 @@ public class SnapshotManager {
             }
 
             if (vars == null) {
-                getRecord(snapshot.entity()).add(snapshot);
+                AuxiliaryStore.store(snapshot.entity(), AuxiliaryStore.snapshotRecord, r -> r.add(snapshot));
             }
         }
 
@@ -150,20 +131,15 @@ public class SnapshotManager {
     }
 
     public static void register(Snapshot snapshot) {
-        snapshots.get(snapshot.entity()).register();
+        getExisting(snapshot.entity()).register();
     }
 
     public static void delete(Snapshot snapshot) {
-        snapshots.get(snapshot.entity()).removed(snapshot);
+        getExisting(snapshot.entity()).removed(snapshot);
     }
 
     public static void deleteEntity(Senseable entity) {
-        snapshots.get(entity).clear();
-    }
-
-    public static void deleteAll() {
-        snapshots.each((b, q) -> q.clear());
-        id = 0;
+        getExisting(entity).clear();
     }
 
     private static Snapshot create(Senseable entity, SnapshotType type, Seq<Snapshot> group, String name) {
@@ -176,9 +152,17 @@ public class SnapshotManager {
         return snapshot;
     }
 
-    static class SnapshotRecord {
+    public static class SnapshotRecord implements AuxiliaryData {
         final Queue<Snapshot> queue = new Queue<>();
         int size = 0;
+
+        public SnapshotRecord(Senseable object) {
+        }
+
+        @Override
+        public AuxiliaryData reset(Senseable object) {
+            return this;
+        }
 
         void add(Snapshot snapshot) {
             adjustSize(maxSnapshots);

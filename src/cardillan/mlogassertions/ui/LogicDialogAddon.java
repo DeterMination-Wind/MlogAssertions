@@ -6,7 +6,7 @@ import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
 import cardillan.mlogassertions.Accessor;
-import cardillan.mlogassertions.logic.InstrumentationEngine;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
@@ -15,7 +15,6 @@ import mindustry.gen.Icon;
 import mindustry.logic.GlobalVarsDialog;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LogicDialog;
-import mindustry.ui.Displayable;
 import mindustry.ui.dialogs.BaseDialog;
 import mindustry.world.blocks.logic.LogicBlock;
 
@@ -31,6 +30,7 @@ public class LogicDialogAddon {
     public static Field wasPausedField;
     public static GlobalVarsDialog globalsDialog;
     static LogicBlock.LogicBuild editedBuild = null;
+    static LExecutor.LInstruction[] editedInstructions = null;
 
     static int tapCount = 0;
     static long timeTapped1, timeTapped2;
@@ -81,8 +81,8 @@ public class LogicDialogAddon {
 
         Vars.ui.logic.shown(LogicDialogAddon::setupLogicDialog);
         Vars.ui.logic.hidden(() -> {
-            if (editedBuild != null) {
-                InstrumentationEngine.restoreInstrumentation(editedBuild);
+            if (editedBuild != null && editedInstructions != editedBuild.executor.instructions) {
+                AuxiliaryStore.reset(editedBuild);
                 editedBuild = null;
             }
         });
@@ -104,6 +104,7 @@ public class LogicDialogAddon {
             executor = (LExecutor) executorField.get(Vars.ui.logic);
             wasPaused = (boolean) wasPausedField.get(Vars.ui.logic);
             editedBuild = executor.build;
+            editedInstructions = executor.instructions;
         } catch (IllegalAccessException e) {
             Log.err("[Mlog Dev Tools] Cannot access LogicDialog fields", e);
             return;

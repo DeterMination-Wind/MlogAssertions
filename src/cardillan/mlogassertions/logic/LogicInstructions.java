@@ -7,7 +7,7 @@ import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.Snapshot;
 import cardillan.mlogassertions.data.SnapshotManager;
-import cardillan.mlogassertions.ui.Assertions;
+import cardillan.mlogassertions.ui.MapIndicators;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
@@ -49,7 +49,7 @@ public class LogicInstructions {
         @Override
         public final void run(LExecutor exec) {
             if (op.test(value, compare)) {
-                Assertions.reset(exec.build);
+                MapIndicators.reset(exec.build);
             } else {
                 assertion(exec, "assertionFailedWithValues", message, value, compare, op.symbol);
             }
@@ -96,7 +96,7 @@ public class LogicInstructions {
                     && (type != AssertionType.multiple || (value.num() % multiple.num() == 0))
                     && (test(opMin, min.num(), value.num()))
                     && (test(opMax, value.num(), max.num()))) {
-                Assertions.reset(exec.build);
+                MapIndicators.reset(exec.build);
             } else {
                 assertion(exec, "boundsAssertionFailedWithValues", message, min, value, max, opMin.symbol, opMax.symbol);
             }
@@ -138,7 +138,7 @@ public class LogicInstructions {
         @Override
         public final void run(LExecutor exec) {
             if (ConditionOp.strictEqual.test(expected, actual)) {
-                Assertions.reset(exec.build);
+                MapIndicators.reset(exec.build);
             } else {
                 assertion(exec, "assertionEqualFailedWithValues", message, expected, actual);
             }
@@ -207,7 +207,7 @@ public class LogicInstructions {
                 if (!actual.equals(expected.obj())) {
                     assertion(exec, "assertionEqualFailedWithValues", message, expected, actual);
                 } else {
-                    Assertions.reset(exec.build);
+                    MapIndicators.reset(exec.build);
                 }
             }
         }
@@ -240,7 +240,7 @@ public class LogicInstructions {
         @Override
         public final void run(LExecutor exec) {
             if (expectedType.matches(actualValue)) {
-                Assertions.reset(exec.build);
+                MapIndicators.reset(exec.build);
             } else {
                 assertion(exec, "assertionEqualFailedWithValues", message, expectedType.name(), AssertionDataType.actualType(actualValue));
             }
@@ -302,7 +302,7 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             LogicBuild building = exec.build;
 
-            Assertions.setMessage(building, () -> buildMessage(exec, "", true, vars[0], vars));
+            MapIndicators.setMessage(building, () -> buildMessage(exec, "", true, vars[0], vars));
             exec.counter.numval--;
             exec.yield = true;
             exec.stop = true;
@@ -488,7 +488,7 @@ public class LogicInstructions {
             if (Settings.disableBreakpoints()) return;  // Avoid unnecessary creation of the message
             breakpoint(exec.build, formatAssertionMessage(exec, bundleKey, message, arguments));
         } else {
-            Assertions.setMessage(exec.build, () -> formatAssertionMessage(exec, bundleKey, message, arguments));
+            MapIndicators.setMessage(exec.build, () -> formatAssertionMessage(exec, bundleKey, message, arguments));
             if (Settings.snapshotOnAssertion() && SnapshotManager.maxSnapshots > 0) {
                 SnapshotManager.create(exec.build, SnapshotType.isolated, formatAssertionMessage(exec, bundleKey, message, arguments));
             }
@@ -503,7 +503,7 @@ public class LogicInstructions {
         if (Settings.snapshotOnAssertion() && SnapshotManager.maxSnapshots > 0) {
             SnapshotManager.create(build, SnapshotType.connected, "Breakpoint snapshot at #" + ((int)build.executor.counter.numval - 1));
         }
-        Assertions.breakpoint(build, message);
+        MapIndicators.breakpoint(build, message);
     }
 
     private static String formatAssertionMessage(LExecutor exec, String bundleKey, Object message, Object[] arguments) {
