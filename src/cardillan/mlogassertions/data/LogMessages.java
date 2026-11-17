@@ -12,6 +12,7 @@ import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 public class LogMessages {
     public static int maxMessages = 100;
+    public static int maxLevel = 0;
 
     public static void updateLimit() {
         if (maxMessages == 0) {
@@ -26,14 +27,14 @@ public class LogMessages {
     }
 
     public static void addMessage(LogicBuild build, Log.LogLevel level, @Nullable String category, String message) {
-        if (maxMessages > 0) {
+        if (maxMessages > 0 && level.ordinal() >= maxLevel) {
             AuxiliaryStore.store(build, AuxiliaryStore.loggingData,
                     data -> data.add(Core.graphics.getFrameId(), level, category, message));
         }
     }
 
     public static void addSystemMessage(LogicBuild build, String message) {
-        if (maxMessages > 0) {
+        if (maxMessages > 0 && Core.settings.getBool(Constants.generateSystemLogs, true)) {
             AuxiliaryStore.store(build, AuxiliaryStore.loggingData,
                     data -> data.add(Core.graphics.getFrameId(), Log.LogLevel.info, "" + (char)59407, message));
         }

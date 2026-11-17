@@ -59,6 +59,10 @@ public class VarsDialog extends BaseDialog {
     boolean wasPortrait, compact, paused;
     int rows, cols;
 
+    public static void show(Building build) {
+        new VarsDialog(build).show();
+    }
+
     public VarsDialog(Building entity) {
         this(Snapshots.forBuild(entity));
     }
@@ -239,7 +243,7 @@ public class VarsDialog extends BaseDialog {
                 if (entity instanceof LogicBlock.LogicBuild build) LogDialog.show(build);
             }).get().setDisabled(() -> view.dataType() != EntityDataType.processor);
             t.button(Icon.chartBar, style, () -> {
-                if (entity instanceof LogicBlock.LogicBuild build) new ProfileDialog(build).show();
+                if (entity instanceof LogicBlock.LogicBuild build) ProfileDialog.show(build);
             }).get().setDisabled(() -> view.dataType() != EntityDataType.processor);
 
             // Play/pause the game
@@ -568,7 +572,7 @@ public class VarsDialog extends BaseDialog {
                     }).marginLeft(12f).row();
 
                     t.button("Profiler", Icon.chartBar, style, () -> {
-                        new ProfileDialog(build).show();
+                        ProfileDialog.show(build);
                         dialog.hide();
                     }).marginLeft(12f).row();
                 }

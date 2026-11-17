@@ -17,30 +17,38 @@ public class Constants {
     public static final String rulesAutoProfile = "rules.mlogdevtools.autoprofile";
 
     // Mod settings
-    public static final String disableBreakpoints = "mlogdevtools-disable-breakpoints";
-    public static final String assertsAreBreakpoints = "mlogdevtools-asserts-are-breakpoints";
-    public static final String freeCameraOnBreakpoint = "mlogdevtools-free-camera-on-breakpoint";
-    public static final String maxInstructions = "mlogdevtools-max-instructions";
+    public static final String tripleTapSpeed = "mlogdevtools-triple-tap-speed";
+    public static final String overrideConfigMenu = "mlogdevtools-override-config-menu";
+    public static final String leftConfigButton = "mlogdevtools-left-config-button";
+    public static final String rightConfigButton = "mlogdevtools-right-config-button";
+    public static final String configButtonTexts = "mlogdevtools-config-button-texts";
+
     public static final String minWaitTimeUpdate = "mlogdevtools-min-wait-time-update";
     public static final String processorUpdatesPerTick = "mlogdevtools-processor-updates-per-tick";
     public static final String warnEffectFrequency = "mlogdevtools-warn-effect-frequency";
-    public static final String tripleTapSpeed = "mlogdevtools-triple-tap-speed";
-    public static final String snapshotLimit = "mlogdevtools-snapshot-limit-0";
-
-    public static final String snapshotOnBreakpoint = "mlogdevtools-snapshot-on-breakpoint";
-    public static final String snapshotOnAssertion = "mlogdevtools-snapshot-on-assertion";
 
     public static final String variableUpdateFrequency = "mlogdevtools-variable-update-frequency";
+    public static final String varsSignificantDigits = "mlogdevtools-vars-significant-digits";
     public static final String varsHexadecimal = "mlogdevtools-vars-hexadecimal";
     public static final String varsSorted = "mlogdevtools-vars-sorted";
     public static final String varsHideTemps = "mlogdevtools-vars-hide-temps";
     public static final String varsHideLinks = "mlogdevtools-vars-hide-links";
     public static final String varsFullPrecision = "mlogdevtools-vars-full-precision";
-    public static final String varsSignificantDigits = "mlogdevtools-vars-significant-digits";
     public static final String varsAlignment = "mlogdevtools-vars-alignment";
 
-    public static final String startProfilerImmediatelly = "mlogdevtools-start-profiler-immediatelly";
+    public static final String maxInstructions = "mlogdevtools-max-instructions";
+    public static final String disableBreakpoints = "mlogdevtools-disable-breakpoints";
+    public static final String assertsAreBreakpoints = "mlogdevtools-asserts-are-breakpoints";
+    public static final String freeCameraOnBreakpoint = "mlogdevtools-free-camera-on-breakpoint";
+
+    public static final String startProfilerImmediately = "mlogdevtools-start-profiler-immediately";
 
     public static final String logMessageLimit = "mlogdevtools-log-message-limit";
+    public static final String logLevelLimit = "mlogdevtools-log-level-limit";
     public static final String clearLogOnRestart = "mlogdevtools-clear-log-on-restart";
+    public static final String generateSystemLogs = "mlogdevtools-generate-system-logs";
+
+    public static final String snapshotLimit = "mlogdevtools-snapshot-limit-0";
+    public static final String snapshotOnBreakpoint = "mlogdevtools-snapshot-on-breakpoint";
+    public static final String snapshotOnAssertion = "mlogdevtools-snapshot-on-assertion";
 }

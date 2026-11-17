@@ -46,12 +46,16 @@ public class ProfileDialog extends BaseDialog {
     float scroll = 0f;
     float w;
 
-    public ProfileDialog(LogicBuild build) {
+    public static void show(LogicBuild build) {
+        new ProfileDialog(build).show();
+    }
+
+    private ProfileDialog(LogicBuild build) {
         super("Profiler", Styles.fullDialog);
         this.build = build;
 
         instrumentation = InstrumentationEngine.getInstrumentation(build);
-        if (instrumentation == null && Core.settings.getBool(Constants.startProfilerImmediatelly)) {
+        if (instrumentation == null && Core.settings.getBool(Constants.startProfilerImmediately)) {
             instrumentation = InstrumentationEngine.startProfiling(build);
         }
 
@@ -282,7 +286,7 @@ public class ProfileDialog extends BaseDialog {
                         "If the processor's code gets updated, the profiler remains active, but the data gathered so far are cleared.")
                         .color(Color.lightGray).width(410f).minWidth(410f).wrap(true).padBottom(30f);
                 t.row();
-                t.check("Do not show again", b -> Core.settings.put(Constants.startProfilerImmediatelly, b))
+                t.check("Do not show again", b -> Core.settings.put(Constants.startProfilerImmediately, b))
                         .padBottom(30f).growX().fillX();
                 t.row();
                 t.button("Start profiling", Icon.chartBar, Styles.flatBordert, () -> setup(InstrumentationEngine.startProfiling(build)))

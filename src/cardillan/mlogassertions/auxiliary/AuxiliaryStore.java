@@ -1,11 +1,13 @@
 package cardillan.mlogassertions.auxiliary;
 
+import arc.Core;
 import arc.Events;
 import arc.func.Cons;
 import arc.func.Cons2;
 import arc.func.Func;
 import arc.func.Prov;
 import arc.struct.ObjectMap;
+import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.LogMessages.LoggingData;
 import cardillan.mlogassertions.data.SnapshotManager.SnapshotRecord;
@@ -103,7 +105,7 @@ public class AuxiliaryStore {
         AuxiliaryStore instance = auxiliaryStore.get(object);
         if (instance != null) {
             instance.resetData(object);
-            if (object instanceof LogicBlock.LogicBuild build) {
+            if (object instanceof LogicBlock.LogicBuild build && Core.settings.getBool(Constants.generateSystemLogs, true)) {
                 LogMessages.addSystemMessage(build, "Processor recompiled or restarted");
             } else {
                 if (instance.isEmpty()) auxiliaryStore.remove(object);

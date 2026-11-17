@@ -2,6 +2,7 @@ package cardillan.mlogassertions.ui;
 
 import arc.Core;
 import arc.Events;
+import arc.scene.Element;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
@@ -58,7 +59,7 @@ public class LogicDialogAddon {
             } else if (timeTapped1 >= System.currentTimeMillis() - tripleTapSpeed) {
                 if (tapCount >= 2) {
                     Building build = lastTappedBuild;
-                    Core.app.post(() -> new VarsDialog(build).show());
+                    Core.app.post(() -> VarsDialog.show(build));
                     lastTappedBuild = null;
                 } else {
                     tapCount++;
@@ -101,11 +102,11 @@ public class LogicDialogAddon {
             return;
         }
 
-        TextButton[] old = new TextButton[buttons.getCells().size];
+        Element[] old = new Element[buttons.getCells().size];
         for (int i = 0; i < old.length; i++) {
-            old[i] = (TextButton) buttons.getCells().get(i).get();
+            old[i] = buttons.getCells().get(i).get();
         }
-        for (TextButton button : old) buttons.removeChild(button);
+        for (Element element : old) buttons.removeChild(element);
         buttons.clearChildren();
 
         for (int i = 0; i < old.length; i++) {

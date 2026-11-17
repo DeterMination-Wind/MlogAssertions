@@ -2,13 +2,17 @@ package cardillan.mlogassertions;
 
 import arc.Core;
 import arc.func.Intc;
+import arc.graphics.Color;
 import arc.scene.event.Touchable;
 import arc.scene.ui.Label;
 import arc.scene.ui.Slider;
+import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
+import arc.util.Log;
 import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.SnapshotManager;
+import cardillan.mlogassertions.ui.BuildConfiguration;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.MapIndicators;
 import cardillan.mlogassertions.ui.VarsDialog;
@@ -27,15 +31,21 @@ import static arc.Core.settings;
 public class Settings {
     public static void init() {
         Vars.ui.settings.addCategory("Mlog Dev Tools", Icon.wrench, t -> {
-            t.checkPref(Constants.disableBreakpoints, false);
-            t.checkPref(Constants.assertsAreBreakpoints, false);
-            t.checkPref(Constants.freeCameraOnBreakpoint, true);
+            category(t, "category-user-interface");
 
-            if (canSetInstructions()) {
-                t.sliderPref(Constants.maxInstructions, 1000, 1000, 2000, 100,
-                        Integer::toString,
-                        i -> LExecutor.maxInstructions = i);
-            }
+            t.sliderPref(Constants.tripleTapSpeed, 500, 0, 3000, 50,
+                    i -> i == 0 ? bundle(Constants.tripleTapSpeed, "disabled") :
+                            format(Constants.tripleTapSpeed, "delay", i),
+                    i -> LogicDialogAddon.tripleTapSpeed = i);
+
+            t.checkPref(Constants.overrideConfigMenu, true, BuildConfiguration::setActive);
+
+            final String[] commands = bundle(Constants.configButtonTexts).split(";");
+
+            t.sliderPref(Constants.leftConfigButton, 2, 0, commands.length - 1, 1, i -> commands[i]);
+            t.sliderPref(Constants.rightConfigButton, 3, 0, commands.length - 1, 1, i -> commands[i]);
+
+            category(t, "category-map-indicators");
 
             t.sliderPref(Constants.minWaitTimeUpdate, 1000, 0, 10000, 500,
                     i -> i == 0 ? bundle(Constants.minWaitTimeUpdate, "none") : Double.toString(i / 1000.0),
@@ -51,17 +61,7 @@ public class Settings {
                                     format(Constants.warnEffectFrequency, "every", i),
                     i -> MapIndicators.warnEffectFrequency = i);
 
-            t.sliderPref(Constants.tripleTapSpeed, 500, 0, 3000, 50,
-                    i -> i == 0 ? bundle(Constants.tripleTapSpeed, "disabled") :
-                            format(Constants.tripleTapSpeed, "delay", i),
-                    i -> LogicDialogAddon.tripleTapSpeed = i);
-
-            steppedPref(t, Constants.snapshotLimit, 20, new int[]{0, 5, 10, 20, 50, 100, 200, 500, 1000},
-                    i -> i == 0 ? bundle(Constants.snapshotLimit, "disabled") : Integer.toString(i),
-                    i -> SnapshotManager.maxSnapshots = i);
-
-            t.checkPref(Constants.snapshotOnBreakpoint, false);
-            t.checkPref(Constants.snapshotOnAssertion, false);
+            category(t, "category-vars-screen");
 
             t.sliderPref(Constants.variableUpdateFrequency, 15, 0, 60, 5,
                     i -> i == 0 ? bundle(Constants.variableUpdateFrequency, "everyframe")
@@ -72,13 +72,43 @@ public class Settings {
                     Integer::toString,
                     i -> VarsDialog.significantDigits = i);
 
-            t.checkPref(Constants.startProfilerImmediatelly, false);
+            category(t, "category-debugging");
+
+            if (canSetInstructions()) {
+                t.sliderPref(Constants.maxInstructions, 1000, 1000, 2000, 100,
+                        Integer::toString,
+                        i -> LExecutor.maxInstructions = i);
+            }
+
+            t.checkPref(Constants.disableBreakpoints, false);
+            t.checkPref(Constants.assertsAreBreakpoints, false);
+            t.checkPref(Constants.freeCameraOnBreakpoint, true);
+
+            category(t, "category-profiling");
+
+            t.checkPref(Constants.startProfilerImmediately, false);
+
+            category(t, "category-logging");
 
             steppedPref(t, Constants.logMessageLimit, 100, new int[]{0, 20, 50, 100, 200, 500, 1000, 2000, 5000},
                     i -> i == 0 ? bundle(Constants.logMessageLimit, "disabled") : Integer.toString(i),
                     i -> LogMessages.maxMessages = i);
 
+            t.sliderPref(Constants.logLevelLimit, 0, 0, 3, 1,
+                    i -> Log.LogLevel.values()[i].name(),
+                    i -> LogMessages.maxLevel = i);
+
             t.checkPref(Constants.clearLogOnRestart, true);
+            t.checkPref(Constants.generateSystemLogs, true);
+
+            category(t, "category-snapshots");
+
+            steppedPref(t, Constants.snapshotLimit, 20, new int[]{0, 5, 10, 20, 50, 100, 200, 500, 1000},
+                    i -> i == 0 ? bundle(Constants.snapshotLimit, "disabled") : Integer.toString(i),
+                    i -> SnapshotManager.maxSnapshots = i);
+
+            t.checkPref(Constants.snapshotOnBreakpoint, false);
+            t.checkPref(Constants.snapshotOnAssertion, false);
         });
 
         Vars.ui.settings.hidden(() -> {
@@ -112,12 +142,29 @@ public class Settings {
         return Core.bundle.format("setting." + key + "." + suffix, args);
     }
 
+    private static void category(SettingsTable t, String name) {
+        t.pref(new SettingsCategory(name));
+    }
+
     private static SteppedSliderSetting steppedPref(SettingsTable t, String name, int def, int[] steps, StringProcessor s, Intc changed) {
         settings.defaults(name, def);
         SteppedSliderSetting res;
         t.pref(res = new SteppedSliderSetting(name, def, steps, s, changed));
         t.rebuild();
         return res;
+    }
+
+    public static class SettingsCategory extends Setting {
+        public SettingsCategory(String name) {
+            super(name);
+        }
+
+        @Override
+        public void add(SettingsTable table) {
+            Cell<Label> cell = table.add(title);
+            cell.left().color(Color.lightGray).pad(30, 10, 4, 0).row();
+            table.image().color(Color.lightGray).fillX().height(3).pad(0, 0, 5, 0).row();
+        }
     }
 
     public static class SteppedSliderSetting extends Setting {
