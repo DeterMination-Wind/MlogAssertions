@@ -8,6 +8,7 @@ import arc.struct.Seq;
 import arc.util.Log;
 import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
 import cardillan.mlogassertions.data.CustomGameRules;
+import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.Snapshot;
 import cardillan.mlogassertions.data.SnapshotManager;
 import mindustry.game.EventType;
@@ -131,15 +132,22 @@ public class InstrumentationEngine {
     }
 
     public static Instrumentation startProfiling(LogicBuild build) {
+        LogMessages.addSystemMessage(build, "Profiling started");
         return getInstrumentation(build, true, Instrumentation::startProfiling);
     }
 
     public static void stopProfiling(LogicBuild build) {
-        getInstrumentation(build, false, Instrumentation::stopProfiling);
+        getInstrumentation(build, false, instrumentation -> {
+            LogMessages.addSystemMessage(build, "Profiling stopped");
+            instrumentation.stopProfiling();
+        });
     }
 
     public static Instrumentation clearProfilingData(LogicBuild build) {
-        return getInstrumentation(build, false, Instrumentation::clearProfilingData);
+        return getInstrumentation(build, false, instrumentation -> {
+            LogMessages.addSystemMessage(build, "Profiling data cleared");
+            instrumentation.clearProfilingData();
+        });
     }
 
     public static void remove(LogicBuild build) {

@@ -45,8 +45,6 @@ public class VarsDialog extends BaseDialog {
     public static boolean fullPrecision = Core.settings.getBool(Constants.varsFullPrecision, false);
     public static int alignment = Core.settings.getInt(Constants.varsAlignment, Align.left);
 
-    private static int lastSnapshotId = -1;
-
     private Senseable entity;
 
     // A list of snapshots that can be browsed through
@@ -132,7 +130,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void createSnapshot() {
-        SnapshotManager.create(snapshots.view().entity(), "User snapshot");
+        SnapshotManager.createUser(snapshots.view().entity());
         rebuildTitle(titleTable);
     }
 
@@ -323,7 +321,6 @@ public class VarsDialog extends BaseDialog {
         // Current view
         VariableValues view = snapshots.view();
         view.setView(false, false, false);
-        lastSnapshotId = view instanceof Snapshot s ? s.id() : -1;
         entity = view.entity();
 
         length = view.size();

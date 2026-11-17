@@ -32,6 +32,13 @@ public class LogMessages {
         }
     }
 
+    public static void addSystemMessage(LogicBuild build, String message) {
+        if (maxMessages > 0) {
+            AuxiliaryStore.store(build, AuxiliaryStore.loggingData,
+                    data -> data.add(Core.graphics.getFrameId(), Log.LogLevel.info, "" + (char)59407, message));
+        }
+    }
+
     public static LogMessage[] getMessages(LogicBuild build) {
         LoggingData data = AuxiliaryStore.get(build, AuxiliaryStore.loggingData);
         return data == null ? new LogMessage[0] : data.messages.toArray(LogMessage.class);

@@ -4,9 +4,9 @@ import arc.struct.ObjectMap;
 import arc.struct.ObjectSet;
 import arc.struct.Queue;
 import arc.struct.Seq;
-import cardillan.mlogassertions.logic.SnapshotType;
 import cardillan.mlogassertions.auxiliary.AuxiliaryData;
 import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
+import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.ai.types.LogicAI;
 import mindustry.gen.Building;
 import mindustry.gen.Groups;
@@ -51,8 +51,11 @@ public class SnapshotManager {
         return getExisting(entity).queue;
     }
 
-    public static Snapshot create(Senseable entity, String name) {
-        return create(entity, SnapshotType.connected, name);
+    public static void createUser(Senseable entity) {
+        Snapshot snapshot = create(entity, SnapshotType.connected, "User snapshot");
+        if (snapshot != null && entity instanceof LogicBuild build) {
+            LogMessages.addSystemMessage(build, "Created user snapshot #" + snapshot.id() + " of " + entity);
+        }
     }
 
     public static Snapshot create(Senseable entity, SnapshotType type, String name) {

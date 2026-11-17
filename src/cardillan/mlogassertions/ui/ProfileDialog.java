@@ -17,6 +17,7 @@ import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import cardillan.mlogassertions.Constants;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
 import cardillan.mlogassertions.logic.Instrumentation;
 import cardillan.mlogassertions.logic.InstrumentationEngine;
 import mindustry.gen.Icon;
@@ -315,6 +316,7 @@ public class ProfileDialog extends BaseDialog {
 
     private void restart() {
         build.updateCode(build.code);
+        AuxiliaryStore.reset(build);
         InstrumentationEngine.remove(build);
         instrumentation = InstrumentationEngine.startProfiling(build);
         setup();

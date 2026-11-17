@@ -451,6 +451,10 @@ public class LogicInstructions {
                     master.recording().add(master);
                     InstrumentationEngine.startInstructionSnapshots(build, steps.numi(), master);
                 }
+
+                if (master != null) {
+                    LogMessages.addSystemMessage(exec.build, "Created " + type + " snapshot #" + master.id() + " of " + senseable);
+                }
             }
         }
     }

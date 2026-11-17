@@ -6,12 +6,14 @@ import arc.func.Cons2;
 import arc.func.Func;
 import arc.func.Prov;
 import arc.struct.ObjectMap;
+import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.LogMessages.LoggingData;
 import cardillan.mlogassertions.data.SnapshotManager.SnapshotRecord;
 import cardillan.mlogassertions.logic.Instrumentation;
 import cardillan.mlogassertions.ui.MapIndicators.IndicatorData;
 import mindustry.game.EventType;
 import mindustry.logic.Senseable;
+import mindustry.world.blocks.logic.LogicBlock;
 
 /// This class manages auxiliary data stored with all kinds of objects on the map (processors, memory blocks,
 /// any other building or units).
@@ -35,7 +37,12 @@ public class AuxiliaryStore {
             }
         });
 
-        Events.on(EventType.ConfigEvent.class, e -> reset(e.tile));
+        // For processors: recompilation resets the state
+        Events.on(EventType.ConfigEvent.class, e -> {
+            if (e.value instanceof byte[]) {
+                reset(e.tile);
+            }
+        });
     }
 
     public static <T extends AuxiliaryData> void clear(Key<T> key) {
@@ -96,7 +103,11 @@ public class AuxiliaryStore {
         AuxiliaryStore instance = auxiliaryStore.get(object);
         if (instance != null) {
             instance.resetData(object);
-            if (instance.isEmpty()) auxiliaryStore.remove(object);
+            if (object instanceof LogicBlock.LogicBuild build) {
+                LogMessages.addSystemMessage(build, "Processor recompiled or restarted");
+            } else {
+                if (instance.isEmpty()) auxiliaryStore.remove(object);
+            }
         }
     }
 

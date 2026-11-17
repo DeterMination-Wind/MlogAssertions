@@ -13,8 +13,6 @@ import mindustry.logic.*;
 import mindustry.logic.LStatements.JumpStatement;
 import mindustry.ui.Styles;
 
-import java.util.Arrays;
-
 public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
 

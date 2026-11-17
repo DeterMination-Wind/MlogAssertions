@@ -1,13 +1,15 @@
 package cardillan.mlogassertions;
 
 import arc.Events;
-import cardillan.mlogassertions.data.*;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
+import cardillan.mlogassertions.data.CustomGameRules;
+import cardillan.mlogassertions.data.MapIndex;
+import cardillan.mlogassertions.data.MemoryVars;
 import cardillan.mlogassertions.logic.AssertLogic;
 import cardillan.mlogassertions.logic.InstrumentationEngine;
-import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
-import cardillan.mlogassertions.ui.MapIndicators;
 import cardillan.mlogassertions.ui.BuildConfiguration;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
+import cardillan.mlogassertions.ui.MapIndicators;
 import mindustry.game.EventType;
 import mindustry.mod.Mod;
 

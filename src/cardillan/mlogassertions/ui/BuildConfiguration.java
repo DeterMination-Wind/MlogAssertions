@@ -105,7 +105,7 @@ public class BuildConfiguration {
                         table.background(null);
                         if (build instanceof MemoryBuild) {
                             if (SnapshotManager.maxSnapshots > 0) {
-                                table.button(Icon.box, Styles.cleari, () -> SnapshotManager.create(build, "User snapshot")).size(40);
+                                table.button(Icon.box, Styles.cleari, () -> SnapshotManager.createUser(build)).size(40);
                             }
                             table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
                         } else if (build instanceof LogicBuild logic) {

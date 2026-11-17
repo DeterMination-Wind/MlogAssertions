@@ -3,27 +3,26 @@ package cardillan.mlogassertions.ui;
 import arc.Core;
 import arc.graphics.Color;
 import arc.scene.style.TextureRegionDrawable;
-import arc.scene.ui.Image;
 import arc.scene.ui.Label;
 import arc.scene.ui.ScrollPane;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
-import arc.struct.Queue;
 import arc.util.Align;
 import arc.util.Log;
 import arc.util.Log.LogLevel;
-import cardillan.mlogassertions.data.*;
+import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.LogMessages.LogMessage;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
-import mindustry.logic.LCanvas;
 import mindustry.ui.FileChooser;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
-import mindustry.world.blocks.logic.LogicBlock;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
-import java.util.*;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static mindustry.Vars.ui;
 
@@ -32,11 +31,13 @@ public class LogDialog extends BaseDialog {
     private static boolean descending = true;
 
     private final LogicBuild build;
-    private final Set<LogLevel> enabledLevels = EnumSet.allOf(LogLevel.class);
-    private final Set<String> enabledCategories = new TreeSet<>();
+    private final Set<LogLevel> enabledLevels = EnumSet.noneOf(LogLevel.class);
+    private final Set<String> allCategories = new TreeSet<>();
+    private final Set<String> enabledCategories = new HashSet<>();
     private final Table messageList = new Table();
 
     private LogMessage[] messages;
+    private float frameIdWidth = 65f;
     private int lastWidth;
 
     public static void show(LogicBuild build) {
@@ -50,8 +51,13 @@ public class LogDialog extends BaseDialog {
         this.messages = messages;
         this.shouldPause = true;
 
-        enabledCategories.clear();
-        for (LogMessage m : messages) enabledCategories.add(m.category);
+        allCategories.clear();
+        for (LogMessage m : messages) allCategories.add(m.category);
+
+        if (messages.length > 0) {
+            String str = messages[messages.length - 1].frameId + "";
+            frameIdWidth = Math.max(frameIdWidth, str.length() * 14f);
+        }
 
         addCloseButton();
         shown(this::rebuild);
@@ -85,18 +91,18 @@ public class LogDialog extends BaseDialog {
                             Styles.clearTogglei, () -> {
                 toggle(enabledLevels, level);
                 rebuildMessages();
-            }).size(40).checked(true).tooltip(level.name().toLowerCase());
+            }).size(40).checked(false).tooltip(level.name().toLowerCase());
         }
 
         filters.add().width(10);
         filters.defaults().height(42f);
 
         // Category filters
-        for (String category : enabledCategories) {
+        for (String category : allCategories) {
             filters.button(category.isEmpty() ? "<empty>" : category, Styles.togglet, () -> {
                 toggle(enabledCategories, category);
                 rebuildMessages();
-            }).pad(2).checked(true);
+            }).pad(2).checked(false);
         }
 
         cont.add(filters).center().row();
@@ -111,13 +117,18 @@ public class LogDialog extends BaseDialog {
 
         buttons.clear();
         buttons.button("@back", Icon.left, this::hide).name("back");
-        buttons.button("@edit", Icon.edit, () -> editCommands()).name("edit");
+        buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
     }
 
     private static <T> void toggle(Set<T> set, T value) {
         if (!set.remove(value)) {
             set.add(value);
         }
+    }
+
+    private boolean show(LogMessage message) {
+        return (enabledLevels.isEmpty() || enabledLevels.contains(message.level)) &&
+                (enabledCategories.isEmpty() || enabledCategories.contains(message.category));
     }
 
     private void rebuildMessages() {
@@ -129,7 +140,7 @@ public class LogDialog extends BaseDialog {
         int count = 0;
         for (int i = 0; i < messages.length; i++) {
             LogMessage message = messages[descending ? messages.length - i - 1 : i];
-            if (enabledLevels.contains(message.level) && enabledCategories.contains(message.category)) {
+            if (show(message)) {
                 addMessage(messageList, message);
                 count++;
             }
@@ -154,7 +165,7 @@ public class LogDialog extends BaseDialog {
             // Frame ID — right-aligned, width based on content
             row.add(Long.toString(message.frameId))
                     .color(Color.lightGray)
-                    .minWidth(65)
+                    .minWidth(frameIdWidth)
                     .right()
                     .get().setAlignment(Align.right);
 
