@@ -3,15 +3,23 @@ package cardillan.mlogassertions.ui;
 import arc.Core;
 import arc.graphics.Color;
 import arc.scene.style.TextureRegionDrawable;
-import arc.scene.ui.Label;
-import arc.scene.ui.ScrollPane;
-import arc.scene.ui.TextButton;
+import arc.scene.ui.*;
 import arc.scene.ui.layout.Table;
+import arc.struct.ObjectSet;
+import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
 import arc.util.Log.LogLevel;
+import cardillan.mlogassertions.MlogDevTools;
+import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
+import cardillan.mlogassertions.data.BaseVariableValues;
 import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.LogMessages.LogMessage;
+import cardillan.mlogassertions.data.LogMessages.LoggingData;
+import cardillan.mlogassertions.data.LogMessages.MessageQueue;
+import cardillan.mlogassertions.data.SnapshotManager;
+import cardillan.mlogassertions.data.VariableValues;
+import mindustry.core.GameState;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
 import mindustry.ui.FileChooser;
@@ -24,40 +32,51 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static mindustry.Vars.state;
 import static mindustry.Vars.ui;
 
 public class LogDialog extends BaseDialog {
     public static final int imageSize = 20;
+
+    // Display settings - persistent for the duration of the game session
     private static boolean descending = true;
+    private static boolean connected = false;
+    private static final Set<LogLevel> enabledLevels = EnumSet.noneOf(LogLevel.class);
+    private static final Set<String> enabledCategories = new HashSet<>();
 
     private final LogicBuild build;
-    private final Set<LogLevel> enabledLevels = EnumSet.noneOf(LogLevel.class);
-    private final Set<String> allCategories = new TreeSet<>();
-    private final Set<String> enabledCategories = new HashSet<>();
     private final Table messageList = new Table();
 
-    private LogMessage[] messages;
+    private final Seq<LoggingData> activeLogs = new Seq<>();
+    private final Set<String> allCategories = new TreeSet<>();
+    private final MessageQueue messages = new MessageQueue();
+
+    // The dialog is in one of three possible modes:
+    // 1. Live (live = true): the game is not paused, and the logs are updated on the fly, according to the active
+    //    filters. Changing the filter setting causes full reload.
+    // 2. Paused (live = false, can pause the game): the game is paused, the logs are loaded just once. Changing
+    //    the filter setting causes full reload.
+    // 3. Suspended (file = false, cannot pause the game): the game runs, but the logs aren't updated. Instead, the
+    //    logs have been loaded just once (on opening the dialog, or on suspending updates), and filters are applied
+    //    to the static snapshot of logs.
+    private boolean live = false;
+
+    private long maxFrameId = 0;
     private float frameIdWidth = 65f;
+    private float scrollPos;
+
+    // Resize detection
     private int lastWidth;
 
     public static void show(LogicBuild build) {
-        new LogDialog(build, LogMessages.getMessages(build)).show();
+        new LogDialog(build).show();
     }
 
-    private LogDialog(LogicBuild build, LogMessage[] messages) {
-        super("Log: " + messages.length + " messages");
+    private LogDialog(LogicBuild build) {
+        super("Log");
 
         this.build = build;
-        this.messages = messages;
         this.shouldPause = true;
-
-        allCategories.clear();
-        for (LogMessage m : messages) allCategories.add(m.category);
-
-        if (messages.length > 0) {
-            String str = messages[messages.length - 1].frameId + "";
-            frameIdWidth = Math.max(frameIdWidth, str.length() * 14f);
-        }
 
         addCloseButton();
         shown(this::rebuild);
@@ -68,10 +87,120 @@ public class LogDialog extends BaseDialog {
             }
         });
 
+        update(this::updateMessages);
+
+        reload(true);
+    }
+
+    private long nextCheck = 0;
+
+    private void updateMessages() {
+        if (!live || System.currentTimeMillis() < nextCheck) return;
+
+        int categories = allCategories.size();
+        if (loadMessages(true)) {
+            nextCheck = System.currentTimeMillis() + 25;
+            if (categories == allCategories.size()) {
+                rebuildMessages();
+            } else {
+                rebuild();
+            }
+        }
+    }
+
+    private void reload(boolean force) {
+        if (!force && !live && !MlogDevTools.canPauseGame()) {
+            // Soft-reload of a suspended log: just rebuild messages
+            rebuildMessages();
+            return;
+        }
+
+        activeLogs.clear();
+
+        activeLogs.add(AuxiliaryStore.create(build, AuxiliaryStore.loggingData));
+        if (connected) {
+            ObjectSet<LogicBuild> processors = new ObjectSet<>();
+            processors.add(build);
+
+            VariableValues content = SnapshotManager.liveView(build);
+            content.eachObject(o -> {
+                if (o instanceof LogicBuild b && processors.add(b)) {
+                    AuxiliaryStore.process(b, AuxiliaryStore.loggingData, activeLogs::add);
+                }
+            });
+        }
+
+        allCategories.clear();
+        for (LoggingData data : activeLogs) {
+            data.messages.each(m -> allCategories.add(m.category));
+        }
+
+        loadMessages(false);
         rebuild();
     }
 
+    private boolean matchesFilter(LogMessage message) {
+        return (enabledLevels.isEmpty() || enabledLevels.contains(message.level)) &&
+                (enabledCategories.isEmpty() || enabledCategories.contains(message.category));
+    }
+
+    private boolean loadMessages(boolean incremental) {
+        boolean suspended = !live && !MlogDevTools.canPauseGame();
+        int limit = live ? 100 : 5000;
+        if (!incremental) {
+            messages.clear();
+            maxFrameId = 0;
+        }
+
+        MessageSource[] sources = new MessageSource[activeLogs.size];
+        boolean hasAny = false;
+        for (int i = 0; i < sources.length; i++) {
+            sources[i] = incremental ? new IncrementalMessageSource(activeLogs.get(i)) : new FullMessageSource(activeLogs.get(i));
+            hasAny |= sources[i].hasNext();
+        }
+        if (!hasAny) return false;
+
+        while (true) {
+            long maxId = Long.MIN_VALUE;
+            int maxIndex = -1;
+
+            for (int i = 0; i < sources.length; i++) {
+                MessageSource source = sources[i];
+
+                while (source.hasNext()) {
+                    LogMessage message = source.peek();
+                    allCategories.add(message.category);
+
+                    if (suspended || matchesFilter(message)) {
+                        if (message.messageId > maxId) {
+                            maxId = message.messageId;
+                            maxIndex = i;
+                        }
+                        break;
+                    }
+                    source.next();
+                }
+            }
+
+            if (maxIndex == -1) break;
+
+            LogMessage message = sources[maxIndex].next();
+            maxFrameId = Math.max(maxFrameId, message.frameId);
+            if (incremental) {
+                messages.add(message);
+                if (messages.size > limit) messages.removeFirst();
+            } else {
+                messages.addFirst(message);
+                if (messages.size >= limit) break;
+            }
+        }
+
+        return true;
+    }
+
     private void rebuild() {
+        enabledCategories.retainAll(allCategories);
+
         cont.clear();
 
         Table filters = new Table();
@@ -83,15 +212,27 @@ public class LogDialog extends BaseDialog {
             rebuildMessages();
         }).size(40).padRight(10f).checked(descending).tooltip("Newest first");
 
+        filters.button(Icon.sitemap, Styles.clearTogglei, () -> {
+            connected = !connected;
+            reload(true);
+        }).size(40).padRight(10f).checked(connected).tooltip("Show logs from connected processors");
+
+        filters.button(live ? Icon.pause : Icon.play, Styles.cleari, () -> {
+            live = !live;
+            if (MlogDevTools.canPauseGame()) {
+                state.set(live ? GameState.State.playing : GameState.State.paused);
+            }
+            reload(true);
+        }).size(40).padRight(20f).tooltip(live ? "Pause game/log updates" : "Resume game/log updates");
 
         // Level filters
-        LogLevel[] levels = new LogLevel[] {LogLevel.err, LogLevel.warn, LogLevel.info, LogLevel.debug };
+        LogLevel[] levels = new LogLevel[]{LogLevel.err, LogLevel.warn, LogLevel.info, LogLevel.debug};
         for (LogLevel level : levels) {
             filters.button(button -> button.image(icon(level).tint(color(level))).size(imageSize),
-                            Styles.clearTogglei, () -> {
-                toggle(enabledLevels, level);
-                rebuildMessages();
-            }).size(40).checked(false).tooltip(level.name().toLowerCase());
+                    Styles.clearTogglei, () -> {
+                        toggle(enabledLevels, level);
+                        reload(false);
+                    }).size(40).checked(enabledLevels.contains(level)).tooltip(level.name().toLowerCase());
         }
 
         filters.add().width(10);
@@ -101,8 +242,8 @@ public class LogDialog extends BaseDialog {
         for (String category : allCategories) {
             filters.button(category.isEmpty() ? "<empty>" : category, Styles.togglet, () -> {
                 toggle(enabledCategories, category);
-                rebuildMessages();
-            }).pad(2).checked(false);
+                reload(false);
+            }).pad(2).checked(enabledCategories.contains(category));
         }
 
         cont.add(filters).center().row();
@@ -111,7 +252,7 @@ public class LogDialog extends BaseDialog {
         scroll.setFadeScrollBars(false);
         scroll.setScrollingDisabled(true, false);
 
-        cont.add(scroll).grow();
+        cont.add(scroll).grow().update(s -> scrollPos = s.getScrollY()).get().setScrollYForce(scrollPos);
 
         rebuildMessages();
 
@@ -126,21 +267,22 @@ public class LogDialog extends BaseDialog {
         }
     }
 
-    private boolean show(LogMessage message) {
-        return (enabledLevels.isEmpty() || enabledLevels.contains(message.level)) &&
-                (enabledCategories.isEmpty() || enabledCategories.contains(message.category));
-    }
-
     private void rebuildMessages() {
-        title.setText("Log: " + messages.length + " messages");
+        String str = String.valueOf(maxFrameId);
+        frameIdWidth = Math.max(frameIdWidth, str.length() * 14f);
+
+        title.setText(live ? "Log (live)": "Log (paused, " + messages.size + " messages)");
         lastWidth = Core.graphics.getWidth() / 16;
         messageList.clear();
         messageList.top().left();
 
+        // When suspended, filters need to be applied here
+        boolean suspended = !live && !MlogDevTools.canPauseGame();
+
         int count = 0;
-        for (int i = 0; i < messages.length; i++) {
-            LogMessage message = messages[descending ? messages.length - i - 1 : i];
-            if (show(message)) {
+        for (int i = 0; i < messages.size; i++) {
+            LogMessage message = messages.get(descending ? messages.size - i - 1 :  i);
+            if (!suspended || matchesFilter(message)) {
                 addMessage(messageList, message);
                 count++;
             }
@@ -148,8 +290,8 @@ public class LogDialog extends BaseDialog {
 
         if (count == 0) {
             String text = LogMessages.maxMessages == 0 ? "Logging disabled in settings." :
-                    messages.length == 0 ? "No messages logged in the current processor." :
-                    "No messages matching the filter.";
+                    messages.size == 0 ? "No messages logged in the current processor." :
+                            "No messages matching the filter.";
             messageList.center();
             messageList.add(text).center();
         }
@@ -158,6 +300,14 @@ public class LogDialog extends BaseDialog {
     private void addMessage(Table table, LogMessage message) {
         table.table(row -> {
             row.left().defaults().pad(3, 7, 3, 7);
+
+            // Processor
+            if (connected) {
+                row.add(BaseVariableValues.pos(message.build.x, message.build.y))
+                        .minWidth(130)
+                        .center()
+                        .get().setAlignment(Align.center);
+            }
 
             // Level icon
             row.image(icon(message.level).tint(color(message.level))).size(imageSize);
@@ -212,7 +362,7 @@ public class LogDialog extends BaseDialog {
     }
 
     private String createText() {
-        StringBuilder sb = new StringBuilder(30 * messages.length);
+        StringBuilder sb = new StringBuilder(30 * messages.size);
         sb.append("Level\tFrame\tCategory\tMessage\n");
         for (LogMessage message : messages) {
             sb.append(message.level.name()).append('\t');
@@ -233,8 +383,7 @@ public class LogDialog extends BaseDialog {
 
                 t.button("Clear log messages", Icon.cancel, style, () -> {
                     LogMessages.clear(build);
-                    messages = new LogMessage[0];
-                    rebuildMessages();
+                    reload(true);
                     dialog.hide();
                 }).marginLeft(12f).row();
 
@@ -261,5 +410,65 @@ public class LogDialog extends BaseDialog {
 
         dialog.addCloseListener();
         dialog.show();
+    }
+
+    private interface MessageSource {
+        boolean hasNext();
+        LogMessage peek();
+        LogMessage next();
+    }
+
+    // Traverses messages backwards from the newest one
+    private static class FullMessageSource implements MessageSource {
+        MessageQueue messages;
+        int size;
+        int position;
+
+        public FullMessageSource(LoggingData data) {
+            this.messages = data.messages;
+            this.size = data.messages.size;
+            this.position = data.messages.size - 1;
+            data.additions = 0;
+        }
+
+        public boolean hasNext() {
+            return size > 0;
+        }
+
+        public LogMessage peek() {
+            return messages.get(position);
+        }
+
+        public LogMessage next() {
+            size--;
+            return messages.get(position--);
+        }
+    }
+
+    // Traverses messages forwards from the oldest unseen one
+    private static class IncrementalMessageSource implements MessageSource {
+        MessageQueue messages;
+        int size;
+        int position;
+
+        public IncrementalMessageSource(LoggingData data) {
+            this.messages = data.messages;
+            this.position = Math.max(0, data.messages.size - data.additions);
+            this.size = data.messages.size - this.position;
+            data.additions = 0;
+        }
+
+        public boolean hasNext() {
+            return size > 0;
+        }
+
+        public LogMessage peek() {
+            return messages.get(position);
+        }
+
+        public LogMessage next() {
+            size--;
+            return messages.get(position++);
+        }
     }
 }

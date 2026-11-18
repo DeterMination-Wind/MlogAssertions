@@ -29,29 +29,31 @@ public class LogMessages {
     public static void addMessage(LogicBuild build, Log.LogLevel level, @Nullable String category, String message) {
         if (maxMessages > 0 && level.ordinal() >= maxLevel) {
             AuxiliaryStore.store(build, AuxiliaryStore.loggingData,
-                    data -> data.add(Core.graphics.getFrameId(), level, category, message));
+                    data -> data.add(build, Core.graphics.getFrameId(), level, category, message));
         }
     }
 
     public static void addSystemMessage(LogicBuild build, String message) {
         if (maxMessages > 0 && Core.settings.getBool(Constants.generateSystemLogs, true)) {
             AuxiliaryStore.store(build, AuxiliaryStore.loggingData,
-                    data -> data.add(Core.graphics.getFrameId(), Log.LogLevel.info, "" + (char)59407, message));
+                    data -> data.add(build, Core.graphics.getFrameId(), Log.LogLevel.info, "" + (char)59407, message));
         }
     }
 
-    public static LogMessage[] getMessages(LogicBuild build) {
-        LoggingData data = AuxiliaryStore.get(build, AuxiliaryStore.loggingData);
-        return data == null ? new LogMessage[0] : data.messages.toArray(LogMessage.class);
-    }
-
     public static class LogMessage {
+        // Used to order messages generated in different processors
+        private static long counter = 0;
+
+        public final LogicBuild build;
+        public final long messageId;
         public final long frameId;
         public final Log.LogLevel level;
         public final String category;
         public final String message;
 
-        LogMessage(long frameId, Log.LogLevel level, String category, String message) {
+        LogMessage(LogicBuild build, long frameId, Log.LogLevel level, String category, String message) {
+            this.build = build;
+            this.messageId = counter++;
             this.frameId = frameId;
             this.level = level;
             this.category = category;
@@ -60,7 +62,8 @@ public class LogMessages {
     }
 
     public static class LoggingData implements AuxiliaryData {
-        final Queue<LogMessage> messages = new Queue<>();
+        public final MessageQueue messages = new MessageQueue();
+        public int additions = 0;
 
         public LoggingData(Senseable object) {
         }
@@ -72,11 +75,18 @@ public class LogMessages {
             }
             return this;
         }
-        public void add(long frameId, Log.LogLevel level, String category, String message) {
-            messages.add(new LogMessage(frameId, level, category, message));
+
+        public MessageQueue readMessages() {
+            additions = 0;
+            return messages;
+        }
+
+        public void add(LogicBuild build, long frameId, Log.LogLevel level, String category, String message) {
+            messages.add(new LogMessage(build, frameId, level, category, message));
             if (messages.size > maxMessages) {
                 messages.removeFirst();
             }
+            additions++;
         }
 
         void adjustSize(int maxMessages) {
@@ -84,6 +94,41 @@ public class LogMessages {
                 while (messages.size > maxMessages) messages.removeFirst();
                 messages.shrink();
             }
+        }
+    }
+
+    public static class MessageQueue extends Queue<LogMessage> {
+        public MessageQueue() {
+            super(20, LogMessage.class);
+        }
+
+        public MessageQueue(MessageQueue queue) {
+            super(0);
+
+            LogMessage[] values = queue.values;
+            int head = queue.head();
+            int tail = queue.tail();
+            LogMessage[] newArray = new LogMessage[queue.size];
+            if (head < tail) {
+                System.arraycopy(values, head, newArray, 0, tail - head);
+            } else if (queue.size > 0) {
+                int rest = values.length - head;
+                System.arraycopy(values, head, newArray, 0, rest);
+                System.arraycopy(values, 0, newArray, rest, tail);
+            }
+
+            this.values = newArray;
+            this.head = 0;
+            this.tail = newArray.length;
+            this.size = newArray.length;
+        }
+
+        int head() {
+            return head;
+        }
+
+        int tail() {
+            return tail;
         }
     }
 }

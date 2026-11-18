@@ -10,12 +10,13 @@ import cardillan.mlogassertions.logic.InstrumentationEngine;
 import cardillan.mlogassertions.ui.BuildConfiguration;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.MapIndicators;
+import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.mod.Mod;
 
-public class MlogAssertions extends Mod {
+public class MlogDevTools extends Mod {
 
-    public MlogAssertions() {
+    public MlogDevTools() {
         Events.on(EventType.ClientLoadEvent.class, e -> {
             Settings.init();
 
@@ -36,5 +37,9 @@ public class MlogAssertions extends Mod {
             LogicDialogAddon.init();
             BuildConfiguration.init();
         });
+    }
+
+    public static boolean canPauseGame() {
+        return !Vars.net.active() && !Vars.state.isMenu();
     }
 }
