@@ -37,7 +37,7 @@ public class ProfileDialog extends BaseDialog {
     static boolean colors = true;
     static boolean execTime = false;
 
-    Instrumentation instrumentation = null;
+    Instrumentation instrumentation;
     LogicBuild build;
     long lastCheck = 0;
     long lastSort = 0;
@@ -254,29 +254,18 @@ public class ProfileDialog extends BaseDialog {
             });
 
             cont.update(() -> {
-                if (sorted) {
-                    if (execTime) {
-                        if (lastCheck < System.currentTimeMillis() - 500) {
-                            lastCheck = System.currentTimeMillis();
-                            int diff = System.currentTimeMillis() - lastSort > 1500 ? 1 : 5;
-                            for (int i = 1; i < indexes.length; i++) {
-                                if (instrumentation.time[indexes[i]] - instrumentation.time[indexes[i - 1]] > diff) {
-                                    Core.app.post(() -> sort());
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        if (lastCheck < System.currentTimeMillis() - 500) {
-                            lastCheck = System.currentTimeMillis();
-                            int diff = System.currentTimeMillis() - lastSort > 1500 ? 1 : 5;
-                            for (int i = 1; i < indexes.length; i++) {
-                                if (instrumentation.steps[indexes[i]] - instrumentation.steps[indexes[i - 1]] > diff) {
-                                    Core.app.post(() -> sort());
-                                    break;
-                                }
-                            }
-                        }
+                if (!sorted || lastCheck + 500 >= System.currentTimeMillis()) return;
+
+                lastCheck = System.currentTimeMillis();
+                int diff = System.currentTimeMillis() - lastSort > 1500 ? 1 : 5;
+
+                for (int i = 1; i < indexes.length; i++) {
+                    double current = execTime
+                            ? instrumentation.time[indexes[i]] - instrumentation.time[indexes[i - 1]]
+                            : instrumentation.steps[indexes[i]] - instrumentation.steps[indexes[i - 1]];
+                    if (current > diff) {
+                        Core.app.post(this::sort);
+                        break;
                     }
                 }
             });
@@ -304,7 +293,7 @@ public class ProfileDialog extends BaseDialog {
         if (total <= 0 || part <= 0) return "-";
         if (part >= total) return "100%";
         String result = String.format(format, 100d * part / total);
-        return result.startsWith("100.") ? result.substring(1, result.length()).replace('0', '9') : result;
+        return result.startsWith("100.") ? result.substring(1).replace('0', '9') : result;
     }
 
     private String formatNumber(double number) {
@@ -315,7 +304,7 @@ public class ProfileDialog extends BaseDialog {
         if (total <= 0 || part <= 0) return "-";
         if (part >= total) return "100%";
         String result = String.format(format, 100 * part / total);
-        return result.startsWith("100.") ? result.substring(1, result.length()).replace('0', '9') : result;
+        return result.startsWith("100.") ? result.substring(1).replace('0', '9') : result;
     }
 
     private void restart() {

@@ -140,7 +140,7 @@ public class Instrumentation implements AuxiliaryData {
 
             if (step) {
                 totalSteps++;
-                int updatedSteps = steps[index]++;
+                int updatedSteps = ++steps[index];
                 if (updatedSteps > maxSteps) maxSteps = updatedSteps;
             }
 
@@ -178,7 +178,7 @@ public class Instrumentation implements AuxiliaryData {
         return sbr.toString();
     }
 
-    public static interface InstrumentedInstruction extends LExecutor.LInstruction {
+    public interface InstrumentedInstruction extends LExecutor.LInstruction {
         LExecutor.LInstruction instruction();
     }
 

@@ -1,6 +1,7 @@
 package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
+import cardillan.mlogassertions.logic.Instrumentation;
 import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
@@ -96,8 +97,11 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
             processor.executor.textBuffer.append(textBuffer);
 
             int counter = (int) processor.executor.counter.numval;
-            if (counter >= 0 && counter < executor.instructions.length && executor.instructions[counter] instanceof LExecutor.WaitI w) {
-                w.curTime = (float) timeWaited;
+            if (counter >= 0 && counter < executor.instructions.length && executor.instructions[counter] instanceof LExecutor.WaitI wait) {
+                wait.curTime = timeWaited;
+                if (wait instanceof Instrumentation.InstrumentedInstruction ix && ix.instruction() instanceof LExecutor.WaitI inner) {
+                    inner.curTime = timeWaited;
+                }
             }
 
             return true;

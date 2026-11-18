@@ -426,10 +426,10 @@ public class VarsDialog extends BaseDialog {
                 buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
                 if (Core.graphics.isPortrait()) buttons.row();
                 buttons.button("@varsdialog.options", Icon.filters, this::viewOptions).name("options");
-                buttons.button("@edit", Icon.edit, () -> editCommands()).name("edit");
+                buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
             } else {
                 buttons.button("@back", Icon.left, this::hide).name("back");
-                buttons.button("@edit", Icon.edit, () -> editCommands()).name("edit");
+                buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
                 if (Core.graphics.isPortrait()) buttons.row();
                 buttons.button("@varsdialog.hex", Styles.squareTogglet, () -> refreshView(Constants.varsHexadecimal, hex = !hex))
                         .name("hex").checked(hex);
