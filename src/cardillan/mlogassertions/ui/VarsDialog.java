@@ -423,7 +423,10 @@ public class VarsDialog extends BaseDialog {
             // No snapshots: no commands above the list
             if (snapshots.view().dataType() == EntityDataType.processor) {
                 buttons.button("@back", Icon.left, this::hide).name("back");
-                buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
+                // Optional: a fork that renamed the field must lose the button, not throw on click.
+                if (LogicDialogAddon.globalsDialog != null) {
+                    buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
+                }
                 if (Core.graphics.isPortrait()) buttons.row();
                 buttons.button("@varsdialog.options", Icon.filters, this::viewOptions).name("options");
                 buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
@@ -440,7 +443,10 @@ public class VarsDialog extends BaseDialog {
             // Snapshots are enabled: most commands are displayed above the list
             buttons.button("@back", Icon.left, this::hide).name("back");
             if (snapshots.view().dataType() == EntityDataType.processor) {
-                buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
+                // Optional: a fork that renamed the field must lose the button, not throw on click.
+                if (LogicDialogAddon.globalsDialog != null) {
+                    buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
+                }
             }
         }
 
