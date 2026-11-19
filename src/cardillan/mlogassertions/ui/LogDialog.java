@@ -3,7 +3,9 @@ package cardillan.mlogassertions.ui;
 import arc.Core;
 import arc.graphics.Color;
 import arc.scene.style.TextureRegionDrawable;
-import arc.scene.ui.*;
+import arc.scene.ui.Label;
+import arc.scene.ui.ScrollPane;
+import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
@@ -12,13 +14,13 @@ import arc.util.Log;
 import arc.util.Log.LogLevel;
 import cardillan.mlogassertions.MlogDevTools;
 import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
-import cardillan.mlogassertions.data.BaseVariableValues;
 import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.LogMessages.LogMessage;
 import cardillan.mlogassertions.data.LogMessages.LoggingData;
 import cardillan.mlogassertions.data.LogMessages.MessageQueue;
 import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.data.VariableValues;
+import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
@@ -32,6 +34,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static cardillan.mlogassertions.MlogDevTools.s;
 import static mindustry.Vars.state;
 import static mindustry.Vars.ui;
 
@@ -73,7 +76,7 @@ public class LogDialog extends BaseDialog {
     }
 
     private LogDialog(LogicBuild build) {
-        super("Log");
+        super(Core.bundle.get("mlogdevtools.log.title"));
 
         this.build = build;
         this.shouldPause = true;
@@ -210,12 +213,12 @@ public class LogDialog extends BaseDialog {
         filters.button(Icon2.sortDesc, Styles.clearTogglei, () -> {
             descending = !descending;
             rebuildMessages();
-        }).size(40).padRight(10f).checked(descending).tooltip("Newest first");
+        }).size(40).padRight(10f).checked(descending).tooltip(Core.bundle.get("mlogdevtools.log.newestfirst"));
 
         filters.button(Icon.sitemap, Styles.clearTogglei, () -> {
             connected = !connected;
             reload(true);
-        }).size(40).padRight(10f).checked(connected).tooltip("Show logs from connected processors");
+        }).size(40).padRight(10f).checked(connected).tooltip(Core.bundle.get("mlogdevtools.log.showconnected"));
 
         filters.button(live ? Icon.pause : Icon.play, Styles.cleari, () -> {
             live = !live;
@@ -223,7 +226,7 @@ public class LogDialog extends BaseDialog {
                 state.set(live ? GameState.State.playing : GameState.State.paused);
             }
             reload(true);
-        }).size(40).padRight(20f).tooltip(live ? "Pause game/log updates" : "Resume game/log updates");
+        }).size(40).padRight(20f).tooltip(Core.bundle.get(live ? "mlogdevtools.log.pause" : "mlogdevtools.log.resume"));
 
         // Level filters
         LogLevel[] levels = new LogLevel[]{LogLevel.err, LogLevel.warn, LogLevel.info, LogLevel.debug};
@@ -240,7 +243,7 @@ public class LogDialog extends BaseDialog {
 
         // Category filters
         for (String category : allCategories) {
-            filters.button(category.isEmpty() ? "<empty>" : category, Styles.togglet, () -> {
+            filters.button(category.isEmpty() ? Core.bundle.get("mlogdevtools.log.empty") : category, Styles.togglet, () -> {
                 toggle(enabledCategories, category);
                 reload(false);
             }).pad(2).checked(enabledCategories.contains(category));
@@ -257,8 +260,8 @@ public class LogDialog extends BaseDialog {
         rebuildMessages();
 
         buttons.clear();
-        buttons.button("@back", Icon.left, this::hide).name("back");
-        buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
+        buttons.button("@back", Icon.left, this::hide).name(s("back"));
+        buttons.button("@edit", Icon.edit, this::editCommands).name(s("edit"));
     }
 
     private static <T> void toggle(Set<T> set, T value) {
@@ -271,7 +274,7 @@ public class LogDialog extends BaseDialog {
         String str = String.valueOf(maxFrameId);
         frameIdWidth = Math.max(frameIdWidth, str.length() * 14f);
 
-        title.setText(live ? "Log (live)": "Log (paused, " + messages.size + " messages)");
+        title.setText(live ? Core.bundle.get("mlogdevtools.log.titlelive") : Core.bundle.format("mlogdevtools.log.titlepaused", messages.size));
         lastWidth = Core.graphics.getWidth() / 16;
         messageList.clear();
         messageList.top().left();
@@ -289,9 +292,9 @@ public class LogDialog extends BaseDialog {
         }
 
         if (count == 0) {
-            String text = LogMessages.maxMessages == 0 ? "Logging disabled in settings." :
-                    messages.size == 0 ? "No messages logged in the current processor." :
-                            "No messages matching the filter.";
+            String text = LogMessages.maxMessages == 0 ? Core.bundle.get("mlogdevtools.log.disabled") :
+                    messages.size == 0 ? Core.bundle.get("mlogdevtools.log.nomessages") :
+                            Core.bundle.get("mlogdevtools.log.nomatchingfilter");
             messageList.center();
             messageList.add(text).center();
         }
@@ -303,7 +306,7 @@ public class LogDialog extends BaseDialog {
 
             // Processor
             if (connected) {
-                row.add(BaseVariableValues.pos(message.build.x, message.build.y))
+                row.add(pos(message.build.x, message.build.y))
                         .minWidth(130)
                         .center()
                         .get().setAlignment(Align.center);
@@ -363,8 +366,10 @@ public class LogDialog extends BaseDialog {
 
     private String createText() {
         StringBuilder sb = new StringBuilder(30 * messages.size);
-        sb.append("Level\tFrame\tCategory\tMessage\n");
+        if (connected) sb.append(s("Processor\t"));
+        sb.append(s("Level\tFrame\tCategory\tMessage\n"));
         for (LogMessage message : messages) {
+            if (connected) sb.append(pos(message.build.x, message.build.y)).append('\t');
             sb.append(message.level.name()).append('\t');
             sb.append(message.frameId).append('\t');
             sb.append(message.category == null ? "" : message.category).append('\t');
@@ -381,7 +386,7 @@ public class LogDialog extends BaseDialog {
                 TextButton.TextButtonStyle style = Styles.flatt;
                 t.defaults().size(360f, 60f).left();
 
-                t.button("Clear log messages", Icon.cancel, style, () -> {
+                t.button(Core.bundle.get("mlogdevtools.log.clearmessages"), Icon.cancel, style, () -> {
                     LogMessages.clear(build);
                     reload(true);
                     dialog.hide();
@@ -392,24 +397,28 @@ public class LogDialog extends BaseDialog {
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                t.button("Export to a text file", Icon.upload, style, () -> {
-                    FileChooser.save("txt").name("log_messages.txt").submit(file -> {
+                t.button(Core.bundle.get("mlogdevtools.log.exporttofile"), Icon.upload, style, () -> {
+                    FileChooser.save(s("txt")).name("log_messages.txt").submit(file -> {
                         try {
                             file.writeString(createText());
                         } catch (Exception e) {
-                            Log.err("[Mlog Dev Tools] Error writing file: ", e);
-                            ui.showErrorMessage("Error writing file " + file.absolutePath());
+                            MlogDevTools.err("Error writing file: ", e);
+                            ui.showErrorMessage(Core.bundle.format("mlogdevtools.writeerror", file.absolutePath()));
                         }
                     });
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                t.button("@back", Icon.left, style, dialog::hide).padTop(10f).marginLeft(12f).name("back");
+                t.button("@back", Icon.left, style, dialog::hide).padTop(10f).marginLeft(12f).name(s("back"));
             });
         });
 
         dialog.addCloseListener();
         dialog.show();
+    }
+
+    public static String pos(float x, float y) {
+        return String.format(s("(%.0f,\u00A0%.0f)"), x / Vars.tilesize, y / Vars.tilesize);
     }
 
     private interface MessageSource {

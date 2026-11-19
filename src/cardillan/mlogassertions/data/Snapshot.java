@@ -10,13 +10,13 @@ public interface Snapshot extends VariableValues {
     int id();
 
     // List of all snapshots in the group
-    // Retuns null - not an empty Seq! - when the snapshot is isolated.
+    // Returns null - not an empty Seq! - when the snapshot is isolated.
     Seq<Snapshot> group();
 
-    // List of snaphots within a recording snapshott, null if not a recording snapshot
+    // List of snapshots within a recording snapshot, null if not a recording snapshot
     Seq<Snapshot> recording();
 
-    // Returns the porportion of each type in the snapshot
+    // Returns the proportion of each type in the snapshot
     float[] typeDistribution();
 
     boolean writeTo(VariableValues liveData);

@@ -2,6 +2,7 @@ package cardillan.mlogassertions.data;
 
 import arc.graphics.Color;
 import mindustry.graphics.Pal;
+import org.jetbrains.annotations.NonNls;
 
 public enum ValueType {
     nothing     ("null",     true,  Color.darkGray),
@@ -26,7 +27,7 @@ public enum ValueType {
     public final Color shade;
     public final Color darkShade;
 
-    ValueType(String title, boolean numeric, Color shade) {
+    ValueType(@NonNls String title, boolean numeric, Color shade) {
         this.title = title;
         this.numeric = numeric;
         this.paddedTitle = " " + title + " ";

@@ -3,7 +3,7 @@ package cardillan.mlogassertions.data;
 import arc.Events;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
-import arc.util.Log;
+import cardillan.mlogassertions.MlogDevTools;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.gen.Groups;
@@ -34,7 +34,7 @@ public class MapIndex {
                 if (tile.build instanceof MemoryBuild memory && seen.add(memory)) memories.add(memory);
             });
 
-            Log.info("[Mlog Dev Tools] found " + processors.size + " processors and " + memories.size + " memory blocks on the map.");
+            MlogDevTools.info("Found " + processors.size + " processors and " + memories.size + " memory blocks on the map.");
         });
 
         Events.on(EventType.BlockBuildEndEvent.class, e -> {

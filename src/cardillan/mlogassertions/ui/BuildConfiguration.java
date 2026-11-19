@@ -8,8 +8,8 @@ import arc.scene.actions.Actions;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
-import arc.util.Log;
 import cardillan.mlogassertions.Constants;
+import cardillan.mlogassertions.MlogDevTools;
 import cardillan.mlogassertions.data.SnapshotManager;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -94,7 +94,7 @@ public class BuildConfiguration {
                 Vars.content.blocks().each(b -> b instanceof MemoryBlock, b -> b.configurable = false);
             }
         } catch (ReflectiveOperationException e) {
-            Log.err("[Mlog Dev Tools] Failed to replace InputHandler.config", e);
+            MlogDevTools.err("Failed to replace InputHandler.config", e);
         }
     }
 
@@ -109,7 +109,7 @@ public class BuildConfiguration {
             try {
                 return (Building) configSelected.get(delegate);
             } catch (IllegalAccessException e) {
-                Log.err("[Mlog Dev Tools] Failed to access BlockConfigFragment private fields", e);
+                MlogDevTools.err("Failed to access BlockConfigFragment private fields", e);
                 return null;
             }
         }
@@ -200,7 +200,7 @@ public class BuildConfiguration {
                     });
                 }
             } catch (IllegalAccessException e) {
-                Log.err("[Mlog Dev Tools] Failed to access BlockConfigFragment private fields", e);
+                MlogDevTools.err("Failed to access BlockConfigFragment private fields", e);
             }
         }
 

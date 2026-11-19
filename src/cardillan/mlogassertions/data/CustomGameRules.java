@@ -1,9 +1,9 @@
 package cardillan.mlogassertions.data;
 
 import arc.Events;
-import arc.util.Log;
 import cardillan.mlogassertions.Accessor;
 import cardillan.mlogassertions.Constants;
+import cardillan.mlogassertions.MlogDevTools;
 import cardillan.mlogassertions.logic.InstrumentationEngine;
 import mindustry.Vars;
 import mindustry.game.EventType;
@@ -12,6 +12,8 @@ import mindustry.game.Rules;
 import mindustry.ui.dialogs.CustomRulesDialog;
 
 import java.lang.reflect.Field;
+
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public class CustomGameRules {
     public static boolean autoProfile = false;
@@ -28,7 +30,7 @@ public class CustomGameRules {
             addRules(Accessor.from(Vars.ui.editor).access("infoDialog").access("ruleInfo").get(CustomRulesDialog.class));
             addRules(Accessor.from(Vars.ui.editor).access("playtestDialog").access("dialog").get(CustomRulesDialog.class));
         } catch (Accessor.AccessException | NoSuchFieldException e) {
-            Log.err("[Mlog Dev Tools] Error installing custom game rules", e);
+            MlogDevTools.err("Error installing custom game rules", e);
             return;
         }
 
@@ -47,12 +49,12 @@ public class CustomGameRules {
 
         if (autoProfile) {
             MapIndex.processors.each(InstrumentationEngine::startProfiling);
-            Log.info("[Mlog Dev Tools] Started profiling " + MapIndex.processors.size + " processors");
+            MlogDevTools.info("Started profiling " + MapIndex.processors.size + " processors");
         }
     }
 
     public static boolean isAutoProfile(Rules rules) {
-        return Boolean.parseBoolean(rules.tags.get(Constants.rulesAutoProfile, "false"));
+        return Boolean.parseBoolean(rules.tags.get(Constants.rulesAutoProfile, "false")); //NON-NLS
     }
 
     private static void addRules(CustomRulesDialog dialog) {
@@ -60,15 +62,14 @@ public class CustomGameRules {
             try {
                 Rules rules = (Rules) customRules.get(dialog);
 
-                dialog.category("mlogdevtools");
-
-                dialog.check("@" + Constants.rulesAutoProfile,
+                dialog.category(Constants.customRulesCategory);
+                dialog.check(s("@" + Constants.rulesAutoProfile),
                         state -> rules.tags.put(Constants.rulesAutoProfile, String.valueOf(state)),
                         () -> isAutoProfile(rules));
 
                 dialog.hidden(() -> applyRules(rules));
             } catch (IllegalAccessException e) {
-                Log.err("[Mlog Dev Tools] Failed to access CustomRulesDialog.rules", e);
+                MlogDevTools.err("Failed to access CustomRulesDialog.rules", e);
             }
         });
     }

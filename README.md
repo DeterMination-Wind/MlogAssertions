@@ -12,10 +12,10 @@ This mod aims to make debugging in Mindustry Logic a bit easier. Provided functi
 * Enhanced **Vars** screen: showing numeric values in full precision and color values, sorting variables by name, copying variables and the text buffer contents to the clipboard.
 * **Memory** screen for inspecting contents of memory blocks, using the same interface as the **Vars** screen. Includes a command to clear (reset) the contents of memory blocks.
 * Settings for overriding instruction limit, by up to 1000 instructions. This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
-* **Snapshots** allow saving, reviewing and restoring the state of logic processors, memory blocks and all other blocks on the map. A snapshot can be created manually or using a logic instruction. A limited number of snapshots is kept for each block, allowing to review the exact block state at the time the smapshot has been created.
+* **Snapshots** allow saving, reviewing and restoring the state of logic processors, memory blocks and all other blocks on the map. A snapshot can be created manually or using a logic instruction. A limited number of snapshots is kept for each block, allowing to review the exact block state at the time the snapshot has been created.
 * A **profiler** for gathering statistics about individual processor instructions execution.
-* **Logging**: a custom `log` instruction can create ligging messages that can be later inspected from the UI.
-* Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a bbreakpoint, taking snaphots and managing profiling.
+* **Logging**: a custom `log` instruction creates logging messages that can be later inspected from the UI.
+* Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a breakpoint, taking snapshots and managing profiling.
 * Visual indication of stopped processors, processors executing a `wait` instruction, and failed runtime checks, directly on the map.
 
 ![Screenshot of state indicated on processors](processors.png)

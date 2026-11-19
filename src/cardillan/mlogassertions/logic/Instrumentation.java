@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 
 public class Instrumentation implements AuxiliaryData {
+    public static final String UNKNOWN_INSTRUCTION = "unknown instruction";
+
     public final LExecutor executor;
 
     // Profiling: constant data
@@ -56,13 +58,13 @@ public class Instrumentation implements AuxiliaryData {
         this.colors = new Color[size];
         this.source = new String[size];
 
-        // Parsing only serves to obatin a source code for each instruction
+        // Parsing only serves to obtain a source code for each instruction
         // It is not possible to retrieve the source code from individual LInstruction instances
         Seq<LStatement> parsedSeq = InstrumentationEngine.parse(executor.build.code, executor.privileged);
 
         for (int i = 0; i < instructions.length; i++) {
             LExecutor.LInstruction instruction = instructions[i];
-            source[i] = i < parsedSeq.size ? printInstruction(parsedSeq.get(i)) : "unknown instruction";
+            source[i] = i < parsedSeq.size ? printInstruction(parsedSeq.get(i)) : UNKNOWN_INSTRUCTION;
             colors[i] = InstrumentationEngine.getCategory(instruction).color.cpy().mul(0.8f);
             branching[i] = instruction instanceof LExecutor.JumpI ? 0 : -1;
             instructions[i] = instrument(instruction);
@@ -153,7 +155,7 @@ public class Instrumentation implements AuxiliaryData {
     }
 
     private void createSnapshot(int index, LVar[] vars) {
-        String text = index >= 0 && index < source.length ? source[index] : "unknown instruction";
+        String text = index >= 0 && index < source.length ? source[index] : UNKNOWN_INSTRUCTION;
         Snapshot snapshot = SnapshotManager.create(executor.build, SnapshotType.recording, index + ": " + text, vars);
         if (snapshot != null) {
             master.recording().add(snapshot);
@@ -171,7 +173,7 @@ public class Instrumentation implements AuxiliaryData {
                 : noYields ? new BasicInstrumentedInstruction(instruction) : new YieldingInstrumentedInstruction(instruction);
     }
 
-    private static StringBuilder sbr = new StringBuilder();
+    private static final StringBuilder sbr = new StringBuilder();
     private static String printInstruction(LStatement statement) {
         sbr.setLength(0);
         statement.write(sbr);

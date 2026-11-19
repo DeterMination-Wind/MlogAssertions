@@ -36,7 +36,7 @@ public class LogMessages {
     public static void addSystemMessage(LogicBuild build, String message) {
         if (maxMessages > 0 && Core.settings.getBool(Constants.generateSystemLogs, true)) {
             AuxiliaryStore.store(build, AuxiliaryStore.loggingData,
-                    data -> data.add(build, Core.graphics.getFrameId(), Log.LogLevel.info, "" + (char)59407, message));
+                    data -> data.add(build, Core.graphics.getFrameId(), Log.LogLevel.info, String.valueOf((char)59407), message));
         }
     }
 
@@ -74,11 +74,6 @@ public class LogMessages {
                 messages.clear();
             }
             return this;
-        }
-
-        public MessageQueue readMessages() {
-            additions = 0;
-            return messages;
         }
 
         public void add(LogicBuild build, long frameId, Log.LogLevel level, String category, String message) {

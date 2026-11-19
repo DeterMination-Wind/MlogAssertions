@@ -23,14 +23,17 @@ import mindustry.ui.Styles;
 import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable;
 import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable.Setting;
 import mindustry.ui.dialogs.SettingsMenuDialog.StringProcessor;
+import org.jetbrains.annotations.NonNls;
 
 import java.lang.reflect.Modifier;
 
 import static arc.Core.settings;
 
 public class Settings {
+    public static final String SETTING = "setting.";
+
     public static void init() {
-        Vars.ui.settings.addCategory("Mlog Dev Tools", Icon.wrench, t -> {
+        Vars.ui.settings.addCategory(Core.bundle.get("mlogdevtools.mod.name"), Icon.wrench, t -> {
             category(t, "category-user-interface");
 
             t.sliderPref(Constants.tripleTapSpeed, 500, 0, 3000, 50,
@@ -130,18 +133,19 @@ public class Settings {
         LogMessages.maxMessages = Core.settings.getInt(Constants.logMessageLimit);
     }
 
-    private static String bundle(String key) {
-        return Core.bundle.get("setting." + key);
+    private static String bundle(@NonNls String key) {
+        return Core.bundle.get(SETTING + key);
     }
 
-    private static String bundle(String key, String suffix) {
-        return Core.bundle.get("setting." + key + "." + suffix);
+    private static String bundle(@NonNls String key, @NonNls String suffix) {
+        return Core.bundle.get(SETTING + key + "." + suffix);
     }
 
-    private static String format(String key, String suffix, Object... args) {
-        return Core.bundle.format("setting." + key + "." + suffix, args);
+    private static String format(@NonNls String key, @NonNls String suffix, Object... args) {
+        return Core.bundle.format(SETTING + key + "." + suffix, args);
     }
 
+    @NonNls
     private static void category(SettingsTable t, String name) {
         t.pref(new SettingsCategory(name));
     }

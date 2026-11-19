@@ -3,13 +3,18 @@ package cardillan.mlogassertions.ui;
 import arc.Core;
 import arc.scene.style.TextureRegionDrawable;
 import cardillan.mlogassertions.Constants;
+import org.jetbrains.annotations.NonNls;
 
 public class Icon2 {
-    public static final TextureRegionDrawable branching = new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-branching"));
-    public static final TextureRegionDrawable log = new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-log"));
-    public static final TextureRegionDrawable percent = new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-percent"));
-    public static final TextureRegionDrawable sortAsc = new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-sort-asc"));
-    public static final TextureRegionDrawable sortDesc = new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-sort-desc"));
-    public static final TextureRegionDrawable sum = new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-sum"));
-    public static final TextureRegionDrawable time = new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-time"));
+    public static final TextureRegionDrawable branching = load("branching");
+    public static final TextureRegionDrawable log = load("log");
+    public static final TextureRegionDrawable percent = load("percent");
+    public static final TextureRegionDrawable sortAsc = load("sort-asc");
+    public static final TextureRegionDrawable sortDesc = load("sort-desc");
+    public static final TextureRegionDrawable sum = load("sum");
+    public static final TextureRegionDrawable time = load("time");
+
+    private static TextureRegionDrawable load(@NonNls String name) {
+        return new TextureRegionDrawable(Core.atlas.find(Constants.modName + "-" + name));
+    }
 }

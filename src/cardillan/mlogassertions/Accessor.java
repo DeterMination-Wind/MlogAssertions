@@ -1,5 +1,7 @@
 package cardillan.mlogassertions;
 
+import org.jetbrains.annotations.NonNls;
+
 import java.lang.reflect.Field;
 
 public class Accessor {
@@ -15,7 +17,7 @@ public class Accessor {
         return instance;
     }
 
-    public Accessor access(String name) throws AccessException {
+    public Accessor access(@NonNls String name) throws AccessException {
         Object newTarget;
         try {
             Field field = target.getClass().getDeclaredField(name);
@@ -37,7 +39,7 @@ public class Accessor {
     }
 
     public static class AccessException extends Exception {
-        public AccessException(String message, Throwable e) {
+        public AccessException(@NonNls String message, Throwable e) {
             super(message, e);
         }
     }

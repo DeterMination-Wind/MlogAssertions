@@ -1,5 +1,6 @@
 package cardillan.mlogassertions.data;
 
+import arc.Core;
 import arc.graphics.g2d.TextureRegion;
 import mindustry.Vars;
 import mindustry.ctype.Content;
@@ -11,6 +12,7 @@ import mindustry.gen.Unit;
 import mindustry.logic.Senseable;
 
 import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public abstract class BaseVariableValues implements VariableValues {
     public final double tick = Vars.state.tick;
@@ -37,7 +39,7 @@ public abstract class BaseVariableValues implements VariableValues {
     public String entityPos() {
         if (buildingPos == null) {
             if (entity instanceof Posc p) {
-                buildingPos = String.format("%.0f,\u00a0%.0f", p.x() / Vars.tilesize, p.y() / Vars.tilesize);
+                buildingPos = String.format("%.0f,\u00a0%.0f", p.x() / Vars.tilesize, p.y() / Vars.tilesize); //NON-NLS
             } else {
                 buildingPos = "";
             }
@@ -50,7 +52,7 @@ public abstract class BaseVariableValues implements VariableValues {
     public String buildingDescMulti() {
         if (buildingDescMulti == null) {
             if (entity instanceof Posc p) {
-                buildingDescMulti = String.format("%s\n[gray](%.0f,\u00a0%.0f)", entityDesc(), p.x() / Vars.tilesize, p.y() / Vars.tilesize);
+                buildingDescMulti = String.format("%s\n[gray](%.0f,\u00a0%.0f)", entityDesc(), p.x() / Vars.tilesize, p.y() / Vars.tilesize); //NON-NLS
             } else {
                 buildingPos = entityDesc();
             }
@@ -68,7 +70,7 @@ public abstract class BaseVariableValues implements VariableValues {
     private String time;
     @Override
     public String time() {
-        if (time == null) time = String.format("%,.2f", tick);
+        if (time == null) time = String.format(s("%,.2f"), tick);
         return time;
     }
 
@@ -84,7 +86,7 @@ public abstract class BaseVariableValues implements VariableValues {
 
     private static final String[] formats = new String[16];
     static {
-        for (int i = 0; i < formats.length; i++) formats[i] = "%." + i + "g";
+        for (int i = 0; i < formats.length; i++) formats[i] = s("%." + i + "g");
     }
 
     @Override
@@ -94,29 +96,29 @@ public abstract class BaseVariableValues implements VariableValues {
             if (obj instanceof String str) {
                 return str;
             } else {
-                return obj == null ? "null" :
+                return obj == null ? "null" : //NON-NLS
                        obj instanceof MappableContent content ? content.name :
-                       obj instanceof Content c ? "[content]" :
-                       obj instanceof Building build ? build.block.name + pos(build.x(), build.y()) + id(build.id) :
-                       obj instanceof Unit unit ? unit.type.name + pos(unit.x(), unit.y()) + id(unit.id) :
+                       obj instanceof Content c ? Core.bundle.get("mlogdevtools.vars.content") :
+                       obj instanceof Building build ? s(build.block.name + pos(build.x(), build.y()) + id(build.id)) :
+                       obj instanceof Unit unit ? s(unit.type.name + pos(unit.x(), unit.y()) + id(unit.id)) :
                        obj instanceof Enum<?> e ? e.name() :
                        obj instanceof Team team ? team.name :
-                       "[object]";
+                       Core.bundle.get("mlogdevtools.vars.object");
             }
         } else {
             double num = num(index);
             if (num <= COLOR_LIMIT && num > 0) {
                 long color = Double.doubleToLongBits(num) & 0xFFFFFFFFL;
                 String str = Integer.toHexString((int) color);
-                if (str.length() < 8) str = "0".repeat(8 - str.length()) + str;
-                return '%' + str + " [#" + str.substring(0, 6) + "]\ue86b";
+                if (str.length() < 8) str = s("0".repeat(8 - str.length()) + str);
+                return s('%' + str + " [#" + str.substring(0, 6) + "]\ue86b");
             } else if ((long) num == num) {
-                return hex ? "0x" + Long.toHexString((long) num).toUpperCase() : Long.toString((long) num);
+                return hex ? s("0x" + Long.toHexString((long) num).toUpperCase()) : Long.toString((long) num);
             } else {
                 if (significantDigits >= formats.length) return Double.toString(num).toLowerCase();
                 String str = String.format(formats[significantDigits], num);
                 if (str.indexOf('e') > 0) return str;
-                if (str.indexOf('.') == -1) return str + ".0";  // It's NOT an integer
+                if (str.indexOf('.') == -1) return s(str + ".0");  // It's NOT an integer
                 int l = str.length() - 1;
                 while (l > 0 && str.charAt(l) == '0') l--;
                 if (str.charAt(l) == '.') l++;
@@ -130,11 +132,11 @@ public abstract class BaseVariableValues implements VariableValues {
     }
 
     public static String pos(float x, float y) {
-        return String.format(" [gray](%.0f,\u00A0%.0f)", x / Vars.tilesize, y / Vars.tilesize);
+        return String.format(s(" [gray](%.0f,\u00A0%.0f)"), x / Vars.tilesize, y / Vars.tilesize);
     }
 
     public static String id(int id) {
-        return " #" + Integer.toHexString(id);
+        return s(" #" + Integer.toHexString(id));
     }
 
     @Override

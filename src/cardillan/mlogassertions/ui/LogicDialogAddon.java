@@ -6,7 +6,7 @@ import arc.scene.Element;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
-import arc.util.Log;
+import cardillan.mlogassertions.MlogDevTools;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
@@ -20,6 +20,7 @@ import mindustry.world.blocks.logic.LogicBlock;
 
 import java.lang.reflect.Field;
 
+import static cardillan.mlogassertions.MlogDevTools.s;
 import static mindustry.Vars.net;
 import static mindustry.Vars.state;
 
@@ -47,7 +48,7 @@ public class LogicDialogAddon {
             wasPausedField = BaseDialog.class.getDeclaredField("wasPaused");
             wasPausedField.setAccessible(true);
         } catch (NoSuchFieldException e) {
-            Log.err("[Mlog Dev Tools] Cannot access LogicDialog fields", e);
+            MlogDevTools.err("Cannot access LogicDialog fields", e);
             return;
         }
 
@@ -57,7 +58,7 @@ public class LogicDialogAddon {
         try {
             globalsDialog = (GlobalVarsDialog) findField(LogicDialog.class, "globalsDialog").get(Vars.ui.logic);
         } catch (ReflectiveOperationException | RuntimeException e) {
-            Log.err("[Mlog Dev Tools] Cannot access LogicDialog.globalsDialog", e);
+            MlogDevTools.err("Cannot access LogicDialog.globalsDialog", e);
         }
 
         Events.on(EventType.TapEvent.class, e -> {
@@ -114,7 +115,7 @@ public class LogicDialogAddon {
             executor = vanilla ? (LExecutor) executorField.get(dialog) : readExecutor(dialog);
             wasPaused = (boolean) wasPausedField.get(dialog);
         } catch (ReflectiveOperationException e) {
-            Log.err("[Mlog Dev Tools] Cannot access LogicDialog fields", e);
+            MlogDevTools.err("Cannot access LogicDialog fields", e);
             return;
         }
 
@@ -139,7 +140,7 @@ public class LogicDialogAddon {
         for (int i = 0; i < old.length; i++) {
             if (i == 2 && Core.graphics.isPortrait()) buttons.row();
 
-            if ("variables".equals(old[i].name)) {
+            if (s("variables").equals(old[i].name)) {
                 buttons.add(buildVariablesButton(dialog, executor, wasPaused));
             } else {
                 buttons.add(old[i]);
@@ -153,7 +154,7 @@ public class LogicDialogAddon {
      */
     @SuppressWarnings("unchecked")
     private static void replaceVariablesButton(LogicDialog dialog, LExecutor executor, boolean wasPaused) {
-        Element current = dialog.buttons.find("variables");
+        Element current = dialog.buttons.find(s("variables"));
         // Nothing to replace, or an earlier show already patched this row.
         if (current == null || current == replacedVariablesButton) return;
 
@@ -173,7 +174,7 @@ public class LogicDialogAddon {
     /**
      * Builds the variables button the vanilla rebuild path adds: same text, icon and style.
      * Table.button() is the only place that assembles all three, so it is built in a scratch table
-     * and the element is moved into the bar afterwards.
+     * and the element is moved into the bar afterward.
      */
     private static TextButton buildVariablesButton(LogicDialog dialog, LExecutor executor, boolean wasPaused) {
         Cell<TextButton> built = new Table().button("@variables", Icon.menu, () -> {
@@ -199,7 +200,7 @@ public class LogicDialogAddon {
             });
 
             varsDialog.show();
-        }).name("variables");
+        }).name(s("variables"));
 
         built.update(b -> {
             if (dialog.shouldShowVariables()) {

@@ -1,11 +1,12 @@
 package cardillan.mlogassertions.logic;
 
+import arc.Core;
 import arc.Events;
 import arc.func.Cons;
 import arc.struct.ObjectMap;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
-import arc.util.Log;
+import cardillan.mlogassertions.MlogDevTools;
 import cardillan.mlogassertions.auxiliary.AuxiliaryStore;
 import cardillan.mlogassertions.data.CustomGameRules;
 import cardillan.mlogassertions.data.LogMessages;
@@ -106,7 +107,7 @@ public class InstrumentationEngine {
 
             initialized = true;
         } catch (ReflectiveOperationException e) {
-            Log.err("[Mlog Dev Tools] Failed to initialize instrumentation.", e);
+            MlogDevTools.err("Failed to initialize instrumentation.", e);
         }
     }
 
@@ -132,20 +133,20 @@ public class InstrumentationEngine {
     }
 
     public static Instrumentation startProfiling(LogicBuild build) {
-        LogMessages.addSystemMessage(build, "Profiling started");
+        LogMessages.addSystemMessage(build, Core.bundle.get("mlogdevtools.profiling.start"));
         return getInstrumentation(build, true, Instrumentation::startProfiling);
     }
 
     public static void stopProfiling(LogicBuild build) {
         getInstrumentation(build, false, instrumentation -> {
-            LogMessages.addSystemMessage(build, "Profiling stopped");
+            LogMessages.addSystemMessage(build, Core.bundle.get("mlogdevtools.profiling.stop"));
             instrumentation.stopProfiling();
         });
     }
 
     public static Instrumentation clearProfilingData(LogicBuild build) {
         return getInstrumentation(build, false, instrumentation -> {
-            LogMessages.addSystemMessage(build, "Profiling data cleared");
+            LogMessages.addSystemMessage(build, Core.bundle.get("mlogdevtools.profiling.reset"));
             instrumentation.clearProfilingData();
         });
     }
@@ -157,9 +158,10 @@ public class InstrumentationEngine {
     static Seq<LStatement> parse(String code, boolean privileged) {
         try {
             LParser parser = parserConstructor.newInstance(code, privileged);
+            //noinspection unchecked
             return (Seq<LStatement>) parseMethod.invoke(parser);
         } catch (ReflectiveOperationException e) {
-            Log.err("[Mlog Dev Tools] Failed to parse code", e);
+            MlogDevTools.err("Failed to parse code", e);
             return new Seq<>();
         }
     }
@@ -183,7 +185,7 @@ public class InstrumentationEngine {
 
         String[] names = new String[fields.length];
         for (int i = 0; i < fields.length; i++) names[i] = fields[i].getName();
-        Log.info("[Mlog Dev Tools] " + clazz.getSimpleName() + Arrays.toString(names));
+        MlogDevTools.info(clazz.getSimpleName() + Arrays.toString(names));
 
         return fields;
     }

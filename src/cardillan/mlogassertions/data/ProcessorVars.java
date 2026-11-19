@@ -1,13 +1,17 @@
 package cardillan.mlogassertions.data;
 
+import arc.Core;
 import arc.func.Cons;
 import arc.func.Prov;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
+import org.jetbrains.annotations.NonNls;
 
 import java.util.Arrays;
 import java.util.Comparator;
+
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public class ProcessorVars extends BaseVariableValues {
     public final LExecutor executor;
@@ -26,9 +30,9 @@ public class ProcessorVars extends BaseVariableValues {
         this.data = new LVar[executor.vars.length + 5 + (executor.privileged ? 1 : 0)];
         length = 0;
 
-        store(objvar("Text buffer", () -> cachedTextBuffer()));
-        store(numvar("Time waited", () -> (double)timeWaited()));
-        store(numvar("Accumulator", () -> (double)executor.build.accumulator));
+        store(objvar(Core.bundle.get("mlogdevtools.vars.var.textbuffer"), () -> cachedTextBuffer()));
+        store(numvar(Core.bundle.get("mlogdevtools.vars.var.timewaited"), () -> (double)timeWaited()));
+        store(numvar(Core.bundle.get("mlogdevtools.vars.var.accumulator"), () -> (double)executor.build.accumulator));
         store(executor.counter);
         store(executor.unit);
         store(executor.ipt);
@@ -40,7 +44,7 @@ public class ProcessorVars extends BaseVariableValues {
 
         for (int i = 1; i < executor.vars.length; i++) {
             store(executor.vars[i]);
-            if (executor.vars[i].name.equals("*id")) id = executor.vars[i];
+            if (executor.vars[i].name.equals("*id")) id = executor.vars[i]; //NON-NLS
         }
 
         view = Arrays.copyOf(data, length);
@@ -52,7 +56,7 @@ public class ProcessorVars extends BaseVariableValues {
 
     static char[] bufferM = new char[150];
     static char[] buffer = new char[150];
-    String rawId, formattedId, formattedIdMulti;
+    @NonNls String rawId, formattedId, formattedIdMulti;
 
     private void updateDesc(String text) {
         boolean copying = false;
@@ -76,7 +80,7 @@ public class ProcessorVars extends BaseVariableValues {
 
         rawId = text;
         formattedId = new String(buffer, 0, l);
-        formattedIdMulti = new String(bufferM, 0, l) + " [gray](" + entityPos() + ")";
+        formattedIdMulti = new String(bufferM, 0, l) + " [gray](" + entityPos() + ")"; //NON-NLS
     }
 
     @Override
@@ -106,7 +110,7 @@ public class ProcessorVars extends BaseVariableValues {
 
     @Override
     public String label(int index, boolean hex) {
-        return " " + view[index].name + " ";
+        return s(" " + view[index].name + " ");
     }
 
     @Override
@@ -168,14 +172,14 @@ public class ProcessorVars extends BaseVariableValues {
 
     private boolean foundVar(LVar var, LVar[] selectedVars) {
         // A typical instruction only has a handful of variables
-        for (int i = 0; i < selectedVars.length; i++) {
-            if (selectedVars[i].name.equals(var.name)) return true;
+        for (LVar selectedVar : selectedVars) {
+            if (selectedVar.name.equals(var.name)) return true;
         }
         return false;
     }
 
     private enum VariableClass {
-        builtin, uncategorized, global, main, local, compiler, temporary;
+        builtin, uncategorized, global, main, local, compiler, temporary
     }
 
     private static VariableClass variableClass(String name) {
@@ -191,7 +195,7 @@ public class ProcessorVars extends BaseVariableValues {
     }
 
     private static boolean isTemp(String name) {
-        return name.startsWith("*tmp");
+        return name.startsWith("*tmp"); //NON-NLS
     }
 
     private static final Comparator<LVar> mindcodeOrder = (la, lb) -> {
@@ -250,8 +254,8 @@ public class ProcessorVars extends BaseVariableValues {
 
     @Override
     public void eachObject(Cons<Object> getter) {
-        for (int index = 0; index < data.length; index++) {
-            if (data[index].isobj) getter.get(data[index].obj());
+        for (LVar datum : data) {
+            if (datum.isobj) getter.get(datum.obj());
         }
     }
 

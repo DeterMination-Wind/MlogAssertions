@@ -79,11 +79,11 @@ public enum AssertionDataType {
      * taxonomy as the game's own variable panel. */
     public static String actualType(LVar var) {
         if (!var.isobj) return "number";
-        if (var.objval == null) return "null";
+        if (var.objval == null) return "null"; //NON-NLS
 
         for (AssertionDataType type: sorted) {
             if (type.objectClass != null && type.objectClass.isInstance(var.objval)) return type.name();
         }
-        return "unknown";
+        return "unknown"; //NON-NLS
     }
 }

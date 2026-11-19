@@ -31,6 +31,7 @@ import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 import static arc.Core.camera;
 import static arc.Core.settings;
+import static cardillan.mlogassertions.MlogDevTools.s;
 import static mindustry.Vars.tilesize;
 
 public class MapIndicators {
@@ -100,7 +101,7 @@ public class MapIndicators {
         AuxiliaryStore.store(block, AuxiliaryStore.indicatorData, r -> {
             if (r.text == null) {
                 String str = message.get();
-                r.setText(str == null ? "<error>" : str);
+                r.setText(str == null ? s("<error>") : str);
 
                 // Just this once
                 if (warnEffectFrequency == 0) effect(block);

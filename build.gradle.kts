@@ -51,8 +51,9 @@ java{
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-dependencies{
-    compileOnly(if(mindustryVersion == "be") "Anuken:MindustryBuilds:latest" else "Anuken:Mindustry:$mindustryVersion")
+dependencies {
+    compileOnly(if (mindustryVersion == "be") "Anuken:MindustryBuilds:latest" else "Anuken:Mindustry:$mindustryVersion")
+    compileOnly("org.jetbrains:annotations:26.0.2")
 }
 
 tasks.jar{

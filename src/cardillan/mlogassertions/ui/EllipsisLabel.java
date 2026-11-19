@@ -5,6 +5,9 @@ import arc.graphics.g2d.Font;
 import arc.graphics.g2d.GlyphLayout;
 import arc.scene.ui.Label;
 import arc.util.Align;
+import org.jetbrains.annotations.NonNls;
+
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public class EllipsisLabel extends Label {
     public static final int maxStringLength = 256;
@@ -64,7 +67,7 @@ public class EllipsisLabel extends Label {
         while (low < high) {
             int mid = (low + high + 1) / 2;
 
-            String candidate = originalText.substring(0, mid).stripTrailing() + "...";
+            @NonNls String candidate = originalText.substring(0, mid).stripTrailing() + "...";
             layout.setText(font, candidate, Color.white, getWidth(), Align.left, true);
 
             if (layout.height <= maxHeight) {
@@ -75,7 +78,7 @@ public class EllipsisLabel extends Label {
         }
 
         updating = true;
-        super.setText(originalText.substring(0, low).stripTrailing() + "...");
+        super.setText(s(originalText.substring(0, low).stripTrailing() + "..."));
         updating = false;
 
         super.layout();

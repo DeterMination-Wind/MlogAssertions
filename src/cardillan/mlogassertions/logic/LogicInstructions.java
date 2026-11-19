@@ -3,6 +3,7 @@ package cardillan.mlogassertions.logic;
 import arc.Core;
 import arc.util.Log;
 import cardillan.mlogassertions.Constants;
+import cardillan.mlogassertions.MlogDevTools;
 import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.data.LogMessages;
 import cardillan.mlogassertions.data.Snapshot;
@@ -13,6 +14,8 @@ import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.logic.Senseable;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
+
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public class LogicInstructions {
 
@@ -103,11 +106,11 @@ public class LogicInstructions {
         }
 
         private boolean test(ConditionOp op, double a, double b) {
-            switch (op) {
-                case lessThan: return a < b;
-                case lessThanEq: return a <= b;
-                default: return false;
-            }
+            return switch (op) {
+                case lessThan -> a < b;
+                case lessThanEq -> a <= b;
+                default -> false;
+            };
         }
     }
 
@@ -218,9 +221,9 @@ public class LogicInstructions {
         public LVar actualValue;
         public LVar message;
 
-        public AssertTypeI(AssertionDataType expectedType, LVar actuallValue, LVar message) {
+        public AssertTypeI(AssertionDataType expectedType, LVar actualValue, LVar message) {
             this.expectedType = expectedType;
-            this.actualValue = actuallValue;
+            this.actualValue = actualValue;
             this.message = message;
         }
 
@@ -399,7 +402,7 @@ public class LogicInstructions {
         public void run(LExecutor exec) {
             if (target.obj() instanceof LogicBuild build) {
                 if (build.accumulator < 2f) {
-                    // Make sure the accumulator allows executing this instruciotn and the following one
+                    // Make sure the accumulator allows executing this instruction and the following one
                     // Allows resetting a processor and activating snapshotting on it.
                     exec.counter.numval --;
                     exec.yield = true;
@@ -444,7 +447,7 @@ public class LogicInstructions {
         public void run(LExecutor exec) {
             if (target.obj() instanceof Senseable senseable) {
                 Snapshot master = SnapshotManager.create(senseable, type, message.isobj && message.objval == null
-                        ? "Mlog " + type + " snapshot"
+                        ? Core.bundle.format("mlogdevtools.snapshots.mlogsnapshot", type)
                         : buildMessage(exec, "", false, message, new Object[0]));
 
                 if (master != null && type == SnapshotType.recording && target.obj() instanceof LogicBuild build) {
@@ -453,7 +456,8 @@ public class LogicInstructions {
                 }
 
                 if (master != null) {
-                    LogMessages.addSystemMessage(exec.build, "Created " + type + " snapshot #" + master.id() + " of " + senseable);
+                    LogMessages.addSystemMessage(exec.build,
+                            Core.bundle.format("mlogdevtools.snapshots.createdsnapshot", type,master.id(),senseable));
                 }
             }
         }
@@ -483,7 +487,7 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Log.log(level, buildMessage(exec, "[Mlog Dev Tools] ", true, vars[0], vars));
+            Log.log(level, buildMessage(exec, MlogDevTools.MLOG_DEV_TOOLS, true, vars[0], vars));
         }
     }
 
@@ -504,8 +508,9 @@ public class LogicInstructions {
 
     private static void breakpoint(LogicBuild build, String message) {
         if (Settings.disableBreakpoints()) return;
-        if (Settings.snapshotOnAssertion() && SnapshotManager.maxSnapshots > 0) {
-            SnapshotManager.create(build, SnapshotType.connected, "Breakpoint snapshot at #" + ((int)build.executor.counter.numval - 1));
+        if (Settings.snapshotOnBreakpoint() && SnapshotManager.maxSnapshots > 0) {
+            SnapshotManager.create(build, SnapshotType.connected,
+                    Core.bundle.format("mlogdevtools.breakpoint.snapshot", (int)build.executor.counter.numval - 1));
         }
         MapIndicators.breakpoint(build, message);
     }
@@ -516,7 +521,7 @@ public class LogicInstructions {
         } else {
             return arguments.length == 0
                     ? Core.bundle.get("assertions.assertionFailed")
-                    : Core.bundle.format("assertions." + bundleKey, printArgs(arguments));
+                    : Core.bundle.format(s("assertions." + bundleKey), printArgs(arguments));
         }
     }
 
@@ -538,7 +543,7 @@ public class LogicInstructions {
                 used |= (1 << index);
             } else {
                 LVar var = exec.optionalVar(sbr.substring(pos + 1, end));
-                str = var == null ? null : var.name.equals("@counter") ? String.valueOf((int) var.numval - 1) : print(var);
+                str = var == null ? null : var.name.equals("@counter") ? String.valueOf((int) var.numval - 1) : print(var); //NON-NLS
             }
             if (str != null) {
                 sbr.replace(pos, end + 1, str);
@@ -559,7 +564,7 @@ public class LogicInstructions {
     }
 
     private static boolean nonNull(LVar var) {
-        return !"null".equals(var.name);
+        return !"null".equals(var.name); //NON-NLS
     }
 
     private static String print(Object message) {
@@ -572,7 +577,7 @@ public class LogicInstructions {
 
     private static String print(LVar var, boolean formatString) {
         if (var.isobj) {
-            return formatString && var.objval instanceof String str ? '"' + str + '"' : LExecutor.PrintI.toString(var.objval);
+            return formatString && var.objval instanceof String str ? s('"' + str + '"') : LExecutor.PrintI.toString(var.objval);
         } else if (var.numval <= Constants.COLOR_LIMIT && var.numval > 0) {
             long color = Double.doubleToLongBits(var.numval) & 0xFFFFFFFFL;
             return '%' + Integer.toHexString((int) color);

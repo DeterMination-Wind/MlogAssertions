@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 /** Converts the table kept on the clipboard back into values of a variable source. The table
  * has a column for the address, the type and the value, and its values use the literals of the
- * mlog language. The values which have no literal, i.e. the non finite numbers, are written
+ * mlog language. The values which have no literal, i.e. the non-finite numbers, are written
  * as null, which is they way they are treated by the game. */
 public class MemoryText {
     private static final String header = "Slot\tType\tValue";

@@ -17,7 +17,7 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public final String textBuffer;
     public final float timeWaited;
 
-    private float[] typeDistribution = null;
+    private final float[] typeDistribution;
 
     public static ProcessorSnapshot create(LogicBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         return build.executor.vars.length == 0 ? null : new ProcessorSnapshot(build, type, id, group, name);

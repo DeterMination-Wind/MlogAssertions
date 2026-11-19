@@ -10,16 +10,14 @@ import arc.scene.ui.Image;
 import arc.scene.ui.layout.Scl;
 import arc.struct.Seq;
 import arc.util.Scaling;
-import cardillan.mlogassertions.data.*;
+import cardillan.mlogassertions.data.Snapshot;
+import cardillan.mlogassertions.data.ValueType;
 import mindustry.Vars;
-import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
-import mindustry.world.blocks.logic.LogicBlock;
-import mindustry.world.blocks.logic.MemoryBlock;
 
 public class SnapshotsDialog extends BaseDialog {
     VarsDialog vars;
@@ -32,8 +30,8 @@ public class SnapshotsDialog extends BaseDialog {
     float scroll = 0f;
     float w;
 
-    public SnapshotsDialog(VarsDialog vars, Snapshots snapshots) {
-        super("Snapshots");
+    SnapshotsDialog(VarsDialog vars, Snapshots snapshots) {
+        super(Core.bundle.get("mlogdevtools.snapshots.title"));
         this.vars = vars;
         this.snapshots = snapshots;
         this.group = snapshots.group();
@@ -79,7 +77,7 @@ public class SnapshotsDialog extends BaseDialog {
                 }).growY().top().marginRight(15f);
             }).scrollX(false).update(s -> scroll = s.getScrollY()).get().setScrollYForce(scroll);
         } else {
-            cont.add("No snapshots found.").row();
+            cont.add(Core.bundle.get("mlogdevtools.snapshots.nosnapshots")).row();
         }
 
         buttons.clear();
@@ -111,7 +109,7 @@ public class SnapshotsDialog extends BaseDialog {
                     if (group) {
                         text.add(snapshot.buildingDescMulti()).growX().ellipsis(true).wrap(false).pad(0).top().left();
                     } else {
-                        text.add("Snapshot #" + snapshot.id() + ": " + groupSize + (groupSize > 1 ? " blocks" : " block"))
+                        text.add(Core.bundle.format("mlogdevtools.snapshots.snapshottitle", snapshot.id(),groupSize,groupSize > 1 ? 0 : 1))
                                 .growX().ellipsis(true).wrap(false).pad(0).top().left();
                         text.row();
                         text.add(snapshot.name()).color(Pal.accent).ellipsis(true).growX().ellipsis(true).wrap(false).pad(0).top().left();
@@ -167,11 +165,5 @@ public class SnapshotsDialog extends BaseDialog {
 
     private int groupSize(Snapshot snapshot) {
         return snapshot.group() == null ? 1 : snapshot.group().size;
-    }
-
-    private VariableValues createLiveView(Building b) {
-        if (b instanceof MemoryBlock.MemoryBuild build) return new MemoryVars(build);
-        if (b instanceof LogicBlock.LogicBuild build) return new ProcessorVars(build);
-        return null;
     }
 }

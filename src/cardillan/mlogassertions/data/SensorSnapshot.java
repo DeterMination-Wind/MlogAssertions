@@ -13,7 +13,7 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
 
     public final Object[] values = new Object[length];
 
-    private float[] typeDistribution = null;
+    private float[] typeDistribution;
 
     public static SensorSnapshot create(Senseable entity, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         return new SensorSnapshot(entity, type, id, group, name);

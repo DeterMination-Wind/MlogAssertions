@@ -1,11 +1,13 @@
 package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
-import arc.util.Log;
+import cardillan.mlogassertions.MlogDevTools;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public class MemoryVars extends BaseVariableValues {
     // Share cell labels across all instances
@@ -32,7 +34,7 @@ public class MemoryVars extends BaseVariableValues {
             numberField = MemoryBuild.class.getDeclaredField("numberMemory");
             numberField.setAccessible(true);
         } catch (ReflectiveOperationException e) {
-            Log.err("[Mlog Dev Tools] Failed to access MemoryBuild data fields", e);
+            MlogDevTools.err("Failed to access MemoryBuild data fields", e);
         }
     }
 
@@ -54,8 +56,8 @@ public class MemoryVars extends BaseVariableValues {
             decLabels = new String[length];
             hexLabels = new String[length];
             for (int i = 0; i < length; i++) {
-                decLabels[i] = " " + i + " ";
-                hexLabels[i] = " " + Integer.toHexString(i).toUpperCase() + " ";
+                decLabels[i] = s(" " + i + " ");
+                hexLabels[i] = s(" " + Integer.toHexString(i).toUpperCase() + " ");
             }
         }
     }
@@ -67,7 +69,7 @@ public class MemoryVars extends BaseVariableValues {
             //noinspection unchecked
             return (T) field.get(instance);
         } catch (IllegalAccessException e) {
-            Log.err("[Mlog Dev Tools] Failed to access MemoryBuild data fields", e);
+            MlogDevTools.err("Failed to access MemoryBuild data fields", e);
             return defaultValue;
         }
     }

@@ -1,6 +1,6 @@
 package cardillan.mlogassertions.data;
 
-import arc.struct.ObjectMap;
+import arc.Core;
 import arc.struct.ObjectSet;
 import arc.struct.Queue;
 import arc.struct.Seq;
@@ -16,13 +16,11 @@ import mindustry.logic.Senseable;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 import mindustry.world.blocks.logic.MemoryBlock;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
+import org.jetbrains.annotations.NonNls;
 
 public class SnapshotManager {
     public static int maxSnapshots = 20;
     private static int id = 0;
-
-    // Snapshots
-    private static final ObjectMap<Senseable, SnapshotRecord> snapshots = new ObjectMap<>();
 
     public static void updateLimit() {
         if (maxSnapshots == 0) {
@@ -52,9 +50,10 @@ public class SnapshotManager {
     }
 
     public static void createUser(Senseable entity) {
-        Snapshot snapshot = create(entity, SnapshotType.connected, "User snapshot");
+        Snapshot snapshot = create(entity, SnapshotType.connected, Core.bundle.get("mlogdevtools.snapshots.usersnapshot"));
         if (snapshot != null && entity instanceof LogicBuild build) {
-            LogMessages.addSystemMessage(build, "Created user snapshot #" + snapshot.id() + " of " + entity);
+            LogMessages.addSystemMessage(build, Core.bundle.format("mlogdevtools.snapshots.createdusersnapshot", snapshot.id(),
+                    entity));
         }
     }
 
@@ -62,7 +61,7 @@ public class SnapshotManager {
         return create(entity, type, name, null);
     }
 
-    public static Snapshot create(Senseable entity, SnapshotType type, String name, LVar[] vars) {
+    public static Snapshot create(Senseable entity, SnapshotType type, @NonNls String name, LVar[] vars) {
         if (maxSnapshots == 0) return null;
 
         VariableValues content = liveView(entity);

@@ -29,9 +29,8 @@ public class AuxiliaryStore {
     private static final ObjectMap<Senseable, AuxiliaryStore> auxiliaryStore = new ObjectMap<>();
 
     public static void init() {
-        Events.on(EventType.ResetEvent.class, e -> {
-            auxiliaryStore.clear();
-        });
+        Events.on(EventType.ResetEvent.class, e -> auxiliaryStore.clear());
+        Events.on(EventType.WorldLoadEndEvent.class, e -> auxiliaryStore.clear());
 
         Events.on(EventType.BlockBuildEndEvent.class, e -> {
             if (e.breaking && e.tile.build != null) {
@@ -41,7 +40,7 @@ public class AuxiliaryStore {
 
         // For processors: recompilation resets the state
         Events.on(EventType.ConfigEvent.class, e -> {
-            if (e.value instanceof byte[]) {
+            if (e.tile instanceof LogicBlock.LogicBuild && e.value instanceof byte[]) {
                 reset(e.tile);
             }
         });
@@ -106,7 +105,7 @@ public class AuxiliaryStore {
         if (instance != null) {
             instance.resetData(object);
             if (object instanceof LogicBlock.LogicBuild build && Core.settings.getBool(Constants.generateSystemLogs, true)) {
-                LogMessages.addSystemMessage(build, "Processor recompiled or restarted");
+                LogMessages.addSystemMessage(build, Core.bundle.get("mlogdevtools.processor.reset"));
             } else {
                 if (instance.isEmpty()) auxiliaryStore.remove(object);
             }

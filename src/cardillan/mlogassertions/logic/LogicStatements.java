@@ -7,13 +7,19 @@ import arc.graphics.Color;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
+import cardillan.mlogassertions.MlogDevTools;
 import mindustry.gen.Icon;
 import mindustry.gen.LogicIO;
 import mindustry.logic.*;
 import mindustry.logic.LStatements.JumpStatement;
 import mindustry.ui.Styles;
+import org.jetbrains.annotations.NonNls;
+
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public class LogicStatements {
+    public static final String NULL = "null";
+
     private static final LogicStatementWriter writer = new LogicStatementWriter();
 
     public static void register() {
@@ -34,7 +40,7 @@ public class LogicStatements {
 
     private static void register(Prov<LStatement> prov, String opcode, Func<String[], LStatement> parser) {
         if (LAssembler.customParsers.containsKey(opcode)) {
-            Log.warn("Logic statement opcode already registered: " + opcode);
+            MlogDevTools.warn("Logic statement opcode already registered: " + opcode);
             return;
         }
         LogicIO.allStatements.add(prov);
@@ -49,19 +55,15 @@ public class LogicStatements {
     };
 
     public static abstract class AbstractAssertStatement extends LStatement {
-        final String name;
-
         // This is the optional (expandable) message field. Child classes need to use it for optional messages.
-        protected String message = "null";
+        protected String message = NULL;
         boolean expanded = false;
 
-        public AbstractAssertStatement(String name) {
-            this.name = name;
+        public static String bundle(@NonNls String key) {
+            return LStatement.bundle(key);
         }
 
-        @Override
-        public String name() {
-            return name;
+        public AbstractAssertStatement() {
         }
 
         @Override
@@ -70,7 +72,7 @@ public class LogicStatements {
         }
 
         protected boolean expanded() {
-            return !message.equals("null");
+            return !message.equals(NULL);
         }
 
         protected abstract void rebuild(Table t);
@@ -81,29 +83,29 @@ public class LogicStatements {
             rebuild(table);
         }
 
-        // Expandlable message field
-        protected void message(Table t, String label, String defaultMessage) {
+        // Expandable message field
+        protected void message(Table t, @NonNls String label, String defaultMessage) {
             if (!expanded) {
                 t.button(b -> {
-                    b.add("add " + label).color(Color.gray);
+                    b.add(bundle("add " + label)).color(Color.gray);
                     b.clicked(() -> {
                         expanded = true;
-                        message = '"' + defaultMessage + '"';
+                        message = s('"' + defaultMessage + '"');
                         rebuild(t);
                     });
                 }, Styles.logict, () -> {
                 }).size(180f, 40f).left().pad(4f).color(t.color);
             } else {
-                t.add(label).padLeft(10);
+                t.add(bundle(label)).padLeft(10);
                 // Convert various representations of empty messages to null
-                field(t, message, str -> message = str == null || str.isEmpty() || str.equals("\"\"") || str.equals("\"") ? "null" : str)
+                field(t, message, str -> message = str == null || str.isEmpty() || str.equals("\"\"") || str.equals("\"") ? NULL : str)
                         .width(LCanvas.getTargetWidth() - Scl.scl(20f)).padRight(3);
                 if (false) {
                     // A delete button - could be activated inadvertently
                     t.button(b -> {
                         b.image(Icon.trashSmall, t.color);
                         b.clicked(() -> {
-                            message = "null";
+                            message = NULL;
                             expanded = false;
                             rebuild(t);
                         });
@@ -114,12 +116,12 @@ public class LogicStatements {
         }
 
         // Select field with optional label
-        protected <T extends Enum<?>> void select(Table table, String label, T[] values, T current, Cons<T> getter, int cols, float width) {
+        protected <T extends Enum<?>> void select(Table table, @NonNls String label, T[] values, T current, Cons<T> getter, int cols, float width) {
             Table sub = new Table();
             sub.setColor(table.color);
             table.add(sub);
 
-            if (!label.isEmpty()) sub.add(label).padLeft(10);
+            if (!label.isEmpty()) sub.add(bundle(label)).padLeft(10);
             table.button(b -> {
                 b.add(bundle(current));
                 b.clicked(() -> showSelect(b, values, current, o -> { getter.get(o); rebuild(table); }, cols, c -> c.width(width)));
@@ -133,22 +135,22 @@ public class LogicStatements {
         private final boolean hasLevel;
         private final boolean hasCategory;
         public Log.LogLevel level = Log.LogLevel.info;
-        public String category = "null";
+        public String category = NULL;
         public String[] params = new String[10];
 
-        public AbstractMessageStatement(String opcode, String name, String message, boolean hasLevel, boolean hasCategory) {
-            super(name);
+        public AbstractMessageStatement(@NonNls String opcode, @NonNls String message, boolean hasLevel, boolean hasCategory) {
+            super();
             this.opcode = opcode;
             this.hasLevel = hasLevel;
             this.hasCategory = hasCategory;
-            params[0] = "\"" + message + " at #{@counter}.\"";
-            for (int i = 1; i < params.length; i++) params[i] = "null";
+            params[0] = s("\"" + message + " at #{@counter}.\"");
+            for (int i = 1; i < params.length; i++) params[i] = NULL;
         }
 
         @Override
         protected boolean expanded() {
             for (int i = 1; i < params.length; i++) {
-                if (!params[i].isEmpty() && !"null".equals(params[i])) {
+                if (!params[i].isEmpty() && !NULL.equals(params[i])) {
                     return true;
                 }
             }
@@ -164,7 +166,7 @@ public class LogicStatements {
             }
 
             if (hasCategory) {
-                fields(t, "category", false, category, str -> category = str);
+                fields(t, s("category"), false, category, str -> category = str);
             }
 
             field(t, params[0], str -> params[0] = str).width(LCanvas.getTargetWidth() - Scl.scl(20f)).padRight(3);
@@ -172,11 +174,11 @@ public class LogicStatements {
             if (expanded) {
                 for (int i = 1; i < params.length; i++) {
                     final int index = i;
-                    fields(t, "p" + i, false, params[index], v -> params[index] = v);
+                    fields(t, s("p" + i), false, params[index], v -> params[index] = v);
                 }
             } else {
                 t.button(b -> {
-                    b.add("add parameters").color(Color.gray);
+                    b.add(bundle("add parameters")).color(Color.gray);
                     b.clicked(() -> { expanded = true; rebuild(t); });
                 }, Styles.logict, () -> {}).size(180f, 40f).left().pad(4f).color(t.color);
             }
@@ -188,7 +190,7 @@ public class LogicStatements {
             writer.write(opcode);
             if (hasLevel) writer.write(level.name());
             if (hasCategory) writer.write(category);
-            for (String param : params) writer.write(param == null || param.isEmpty() ? "null" : param);
+            for (String param : params) writer.write(param == null || param.isEmpty() ? NULL : param);
             writer.end();
         }
 
@@ -207,10 +209,10 @@ public class LogicStatements {
         public static final String opcode = "assert";
 
         public ConditionOp op = ConditionOp.equal;
-        public String value = "x", compare = "false";
+        public String value = s("x"), compare = s("false");
 
         public AssertStatement() {
-            super("Assert");
+            super();
         }
 
         protected void rebuild(Table t) {
@@ -222,7 +224,7 @@ public class LogicStatements {
                 rebuild(t);
             }, value, str -> value = str, compare, str -> compare = str);
 
-            message(t, "message", "Assertion [gold]{1}[] {3} [gold]{2}[] failed.");
+            message(t, "message", s("Assertion [gold]{1}[] {3} [gold]{2}[] failed."));
         }
 
         @Override
@@ -259,12 +261,12 @@ public class LogicStatements {
         public String multiple = "2";
         public String min = "0";
         public ConditionOp opMin = ConditionOp.lessThanEq;
-        public String value = "index";
+        public String value = s("index");
         public ConditionOp opMax = ConditionOp.lessThanEq;
         public String max = "10";
 
         public AssertBoundsStatement() {
-            super("Assert Bounds");
+            super();
         }
 
         @Override
@@ -275,14 +277,14 @@ public class LogicStatements {
             field(table, value, str -> value = str);
             select(table, "is", AssertionType.all, type, o -> type = o, 2, 110f);
             if (type == AssertionType.multiple) {
-                fields(table, "of", false, multiple, str -> multiple = str);
+                fields(table, s("of"), false, multiple, str -> multiple = str);
             }
-            fields(table, "where", false, min, str -> min = str);
+            fields(table, s("where"), false, min, str -> min = str);
             select(table, "", ops, opMin, o -> opMin = o, 2, 64f);
-            table.add("value").padLeft(10);
+            table.add(bundle("value")).padLeft(10);
             select(table, "", ops, opMax, o -> opMax = o, 2, 64f);
             fields(table, min, str -> min = str);
-            message(table, "message", "Index out of bounds: {1}{4}{2}{5}{3}.");
+            message(table, "message", s("Index out of bounds: {1}{4}{2}{5}{3}."));
         }
 
         @Override
@@ -324,7 +326,7 @@ public class LogicStatements {
         private static ConditionOp conditionOp(String name) {
             ConditionOp op = ConditionOp.valueOf(name);
             if (op != ConditionOp.lessThan && op != ConditionOp.lessThanEq) {
-                throw new IllegalArgumentException("Unsupported condition op: " + name);
+                throw new IllegalArgumentException(s("Unsupported condition op: " + name));
             }
             return op;
         }
@@ -333,10 +335,10 @@ public class LogicStatements {
     public static class AssertEqualsStatement extends AbstractAssertStatement {
         public static final String opcode = "assertequals";
         public String expected = "0";
-        public String actual = "value";
+        public String actual = s("value");
 
         public AssertEqualsStatement() {
-            super("Assert Equals");
+            super();
         }
 
 
@@ -344,9 +346,9 @@ public class LogicStatements {
         protected void rebuild(Table t) {
             t.clearChildren();
             t.left();
-            fields(t, "expected", false, expected, v -> expected = v);
-            fields(t, "actual", false, actual, v -> actual = v);
-            message(t, "message", "Assertion failed: expected [gold]{1}[], got [gold]{2}[].");
+            fields(t, s("expected"), false, expected, v -> expected = v);
+            fields(t, s("actual"), false, actual, v -> actual = v);
+            message(t, "message", s("Assertion failed: expected [gold]{1}[], got [gold]{2}[]."));
         }
 
         @Override
@@ -377,17 +379,17 @@ public class LogicStatements {
 
     public static class AssertFlushStatement extends AbstractAssertStatement {
         public static final String opcode = "assertflush";
-        public String position = "position";
+        public String position = s("position");
 
         public AssertFlushStatement() {
-            super("Assert Flush");
+            super();
         }
 
         @Override
         protected void rebuild(Table t) {
             t.clearChildren();
             t.left();
-            fields(t, "position", false, position, v -> position = v);
+            fields(t, s("position"), false, position, v -> position = v);
         }
 
         @Override
@@ -413,20 +415,20 @@ public class LogicStatements {
 
     public static class AssertPrintsStatement extends AbstractAssertStatement {
         public static final String opcode = "assertprints";
-        public String position = "position";
-        public String expected = "\"frog\"";
+        public String position = s("position");
+        public String expected = s("\"frog\"");
 
         public AssertPrintsStatement() {
-            super("Assert Prints");
+            super();
         }
 
         @Override
         protected void rebuild(Table t) {
             t.clearChildren();
             t.left();
-            fields(t, "position", false, position, v -> position = v);
-            fields(t, "expected", false, expected, v -> expected = v);
-            message(t, "message", "Assertion failed: expected [gold]{1}[], got [gold]{2}[].");
+            fields(t, s("position"), false, position, v -> position = v);
+            fields(t, s("expected"), false, expected, v -> expected = v);
+            message(t, "message", s("Assertion failed: expected [gold]{1}[], got [gold]{2}[]."));
         }
 
         @Override
@@ -458,10 +460,10 @@ public class LogicStatements {
     public static class AssertTypeStatement extends AbstractAssertStatement {
         public static final String opcode = "asserttype";
         public AssertionDataType expectedType = AssertionDataType.unit;
-        public String actualValue = "@unit";
+        public String actualValue = s("@unit");
 
         public AssertTypeStatement() {
-            super("Assert Type");
+            super();
         }
 
         @Override
@@ -470,7 +472,7 @@ public class LogicStatements {
             t.left();
             fields(t, actualValue, v -> actualValue = v);
             select(t, "is", AssertionDataType.all, expectedType, o -> expectedType = o, 2, 160f);
-            message(t, "message", "Assertion failed: expected [gold]{1}[], got [gold]{2}[].");
+            message(t, "message", s("Assertion failed: expected [gold]{1}[], got [gold]{2}[]."));
         }
 
         @Override
@@ -502,17 +504,17 @@ public class LogicStatements {
         public static final String opcode = "breakpoint";
 
         public ConditionOp op = ConditionOp.always;
-        public String value = "x", compare = "false";
+        public String value = s("x"), compare = s("false");
 
         public BreakpointStatement() {
-            super("Breakpoint");
+            super();
         }
 
         protected void rebuild(Table table) {
             table.clearChildren();
             table.left();
 
-            if (op != ConditionOp.always) table.add("when").padLeft(10);
+            if (op != ConditionOp.always) table.add(bundle("when")).padLeft(10);
             JumpStatement.addOp(this, table, op, o -> {
                 op = o;
                 rebuild(table);
@@ -548,7 +550,7 @@ public class LogicStatements {
         public static final String opcode = "error";
 
         public ErrorStatement() {
-            super(opcode, "Error", "Runtime error", false, false);
+            super(opcode, "Runtime error", false, false);
         }
 
         @Override
@@ -567,7 +569,7 @@ public class LogicStatements {
         public static final String opcode = "log";
 
         public LogStatement() {
-            super(opcode, "Log", "Logging a message", true, true);
+            super(opcode, "Logging a message", true, true);
         }
 
         @Override
@@ -586,10 +588,10 @@ public class LogicStatements {
         public static final String opcode = "profile";
 
         public ProfilingCommand command = ProfilingCommand.start;
-        public String block = "@this";
+        public String block = s("@this");
 
         public ProfileStatement() {
-            super("Profile");
+            super();
         }
 
         protected void rebuild(Table t) {
@@ -597,7 +599,7 @@ public class LogicStatements {
             t.left();
 
             select(t, "", ProfilingCommand.all, command, o -> command = o, 1, 70f);
-            fields(t, "profiling of", false, block, str -> block = str);
+            fields(t, s("profiling of"), false, block, str -> block = str);
         }
 
         @Override
@@ -626,10 +628,10 @@ public class LogicStatements {
     public static class RestartStatement extends AbstractAssertStatement {
         public static final String opcode = "restart";
 
-        public String block = "@this";
+        public String block = s("@this");
 
         public RestartStatement() {
-            super("Restart");
+            super();
         }
 
         protected void rebuild(Table t) {
@@ -664,11 +666,11 @@ public class LogicStatements {
         public static final String opcode = "snapshot";
 
         public SnapshotType type = SnapshotType.isolated;
-        public String block = "@this";
+        public String block = s("@this");
         public String steps = "20";
 
         public SnapshotStatement() {
-            super("Snapshot");
+            super();
         }
 
         protected void rebuild(Table t) {
@@ -677,16 +679,16 @@ public class LogicStatements {
 
             select(t, "create", SnapshotType.all, type, o -> type = o, 2, 130f);
             if (type == SnapshotType.recording) {
-                fields(t, "snapshot of the next", false, steps, str -> steps = str).width(75f);
-                fields(t, "steps in", false, block, str -> block = str);
+                fields(t, s("snapshot of the next"), false, steps, str -> steps = str).width(75f);
+                fields(t, s("steps in"), false, block, str -> block = str);
             } else {
                 if (type == SnapshotType.global) {
-                    t.add("snapshot");
+                    t.add(bundle("snapshot"));
                 } else {
-                    fields(t, "snapshot of", false, block, str -> block = str);
+                    fields(t, s("snapshot of"), false, block, str -> block = str);
                 }
 
-                message(t, "name", "Snapshot created at #{@counter}.");
+                message(t, "name", s(bundle("Snapshot created at #{@counter}.")));
             }
         }
 
@@ -721,7 +723,7 @@ public class LogicStatements {
         public static final String opcode = "systemlog";
 
         public SystemLogStatement() {
-            super(opcode, "System Log", "Logging a message", true, false);
+            super(opcode, "Logging a message", true, false);
         }
 
         @Override

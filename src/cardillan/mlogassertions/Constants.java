@@ -14,6 +14,7 @@ public class Constants {
     public static final String reattachCamera = "mlogdevtools-reattach-camera";
 
     // Custom rules
+    public static final String customRulesCategory = "mlogdevtools";
     public static final String rulesAutoProfile = "rules.mlogdevtools.autoprofile";
 
     // Mod settings

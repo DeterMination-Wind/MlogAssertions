@@ -8,6 +8,8 @@ import cardillan.mlogassertions.data.VariableValues;
 import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.logic.Senseable;
 
+import static cardillan.mlogassertions.MlogDevTools.s;
+
 interface Snapshots {
     boolean group();
     boolean recording();
@@ -63,7 +65,7 @@ interface Snapshots {
             @Override
             public String pos() {
                 updateIndex();
-                return index == LIVE ? "live" : index < 0 ? "--/" + queue.size : (index + 1) + "/" + queue.size ;
+                return s(index == LIVE ? "live" : index < 0 ? "--/" + queue.size : (index + 1) + "/" + queue.size);
             }
 
             @Override
@@ -185,7 +187,7 @@ interface Snapshots {
 
     static Snapshots list(Seq<Snapshot> snapshots) {
         return new Snapshots() {
-            boolean recording = snapshots.size > 0 && snapshots.first().type() == SnapshotType.recording;
+            final boolean recording = snapshots.size > 0 && snapshots.first().type() == SnapshotType.recording;
             int index = 0;
 
             @Override
@@ -200,7 +202,7 @@ interface Snapshots {
 
             @Override
             public String title() {
-                return "Snapshot #" + snapshots.first().id() + ": " + snapshots.first().name();
+                return s("Snapshot #" + snapshots.first().id() + ": " + snapshots.first().name());
             }
 
             @Override
@@ -210,9 +212,9 @@ interface Snapshots {
 
             @Override
             public String pos() {
-                return recording
+                return s(recording
                         ? index + "/" + (snapshots.size - 1)
-                        : (index + 1) + "/" + snapshots.size ;
+                        : s((index + 1) + "/" + snapshots.size));
             }
 
             @Override

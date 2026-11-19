@@ -7,13 +7,12 @@ import arc.scene.event.InputEvent;
 import arc.scene.event.InputListener;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.*;
-import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
-import arc.util.Log;
 import arc.util.Time;
 import cardillan.mlogassertions.Constants;
+import cardillan.mlogassertions.MlogDevTools;
 import cardillan.mlogassertions.data.*;
 import mindustry.core.GameState;
 import mindustry.gen.Building;
@@ -29,6 +28,7 @@ import mindustry.world.blocks.logic.LogicBlock;
 
 import java.util.Arrays;
 
+import static cardillan.mlogassertions.MlogDevTools.s;
 import static mindustry.Vars.*;
 
 public class VarsDialog extends BaseDialog {
@@ -36,7 +36,6 @@ public class VarsDialog extends BaseDialog {
     public static int significantDigits = 7;
 
     private static final float reset = 1e10f;
-    private static final int live = 0;
 
     public static boolean hex = Core.settings.getBool(Constants.varsHexadecimal, false);
     public static boolean sorted = Core.settings.getBool(Constants.varsSorted, true);
@@ -102,7 +101,7 @@ public class VarsDialog extends BaseDialog {
         return s.indexOf('[') < 0 ? s : s.replace("[", "[[");
     }
 
-    public void setup(Snapshots snapshots) {
+    void setup(Snapshots snapshots) {
         this.snapshots = snapshots;
         setup();
     }
@@ -142,12 +141,12 @@ public class VarsDialog extends BaseDialog {
         // TODO Group restore
         if (snapshots.view() instanceof Snapshot snapshot) {
             if (snapshot.writeTo(snapshots.liveData())) {
-                ui.showInfo("The processor's state has been restored from the snapshot.");
+                ui.showInfo(Core.bundle.get("mlogdevtools.vars.restored"));
                 setup(Snapshots.forBuild(snapshot.entity()));
                 return;
             }
         }
-        ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
+        ui.showErrorMessage(Core.bundle.get("mlogdevtools.vars.cannotrestore"));
     }
 
     private void removeSnapshot() {
@@ -206,10 +205,10 @@ public class VarsDialog extends BaseDialog {
 
                     title.table(tSnapshot -> {
                         if (view.live()) {
-                            tSnapshot.add("Live").color(Pal.accent).top().growX().get().setAlignment(Align.left);
+                            tSnapshot.add(Core.bundle.get("mlogdevtools.vars.live")).color(Pal.accent).top().growX().get().setAlignment(Align.left);
                         } else {
-                            String name = snapshots.recording() ? snapshot.name()
-                                    : "#" + snapshot.id() + ": " + snapshot.type().charIcon + " " + snapshot.name();
+                            String name = s(snapshots.recording() ? snapshot.name()
+                                    : "#" + snapshot.id() + ": " + snapshot.type().charIcon + " " + snapshot.name());
                             tSnapshot.add(name).color(Pal.accent).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
 
                             Label l = tSnapshot.add(snapshots.pos()).color(Pal.accent).growX().padLeft(10f).get();
@@ -371,9 +370,8 @@ public class VarsDialog extends BaseDialog {
                         EllipsisLabel valueLabel = new EllipsisLabel("");
                         valueLabel.act(1f);
                         valueLabel.maxLines(2);
-                        Cell<Table> val = t.table(Tex.pane, out -> out.add(valueLabel).style(Styles.outlineLabel)
-                                    .padLeft(4).padRight(4).width(compact ? 140f : 220f)
-                        ).padRight(pad);
+                        t.table(Tex.pane, out -> out.add(valueLabel).style(Styles.outlineLabel)
+                                .padLeft(4).padRight(4).width(compact ? 140f : 220f)).padRight(pad);
 
                         ValueType valueType = view.type(index);
                         Image halfShade = t.add(new Image(Tex.whiteui, valueType.darkShade)).width(stub).get();
@@ -422,26 +420,26 @@ public class VarsDialog extends BaseDialog {
         if (SnapshotManager.maxSnapshots == 0) {
             // No snapshots: no commands above the list
             if (snapshots.view().dataType() == EntityDataType.processor) {
-                buttons.button("@back", Icon.left, this::hide).name("back");
+                buttons.button("@back", Icon.left, this::hide).name(s("back"));
                 // Optional: a fork that renamed the field must lose the button, not throw on click.
                 if (LogicDialogAddon.globalsDialog != null) {
                     buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
                 }
                 if (Core.graphics.isPortrait()) buttons.row();
-                buttons.button("@varsdialog.options", Icon.filters, this::viewOptions).name("options");
-                buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
+                buttons.button(Core.bundle.get("mlogdevtools.vars.options"), Icon.filters, this::viewOptions).name(s("options"));
+                buttons.button("@edit", Icon.edit, this::editCommands).name(s("edit"));
             } else {
-                buttons.button("@back", Icon.left, this::hide).name("back");
-                buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
+                buttons.button("@back", Icon.left, this::hide).name(s("back"));
+                buttons.button("@edit", Icon.edit, this::editCommands).name(s("edit"));
                 if (Core.graphics.isPortrait()) buttons.row();
-                buttons.button("@varsdialog.hex", Styles.squareTogglet, () -> refreshView(Constants.varsHexadecimal, hex = !hex))
-                        .name("hex").checked(hex);
-                buttons.button("@varsdialog.fullprecision", Styles.squareTogglet, () -> refreshView(Constants.varsFullPrecision, fullPrecision = !fullPrecision))
-                        .name("fullprecision").checked(fullPrecision);
+                buttons.button(Core.bundle.get("mlogdevtools.vars.hex"), Styles.squareTogglet, () -> refreshView(Constants.varsHexadecimal, hex = !hex))
+                        .name(s("hex")).checked(hex);
+                buttons.button("@mlogdevtools.vars.fullprecision", Styles.squareTogglet, () -> refreshView(Constants.varsFullPrecision, fullPrecision = !fullPrecision))
+                        .name(s("fullprecision")).checked(fullPrecision);
             }
         } else {
             // Snapshots are enabled: most commands are displayed above the list
-            buttons.button("@back", Icon.left, this::hide).name("back");
+            buttons.button("@back", Icon.left, this::hide).name(s("back"));
             if (snapshots.view().dataType() == EntityDataType.processor) {
                 // Optional: a fork that renamed the field must lose the button, not throw on click.
                 if (LogicDialogAddon.globalsDialog != null) {
@@ -470,43 +468,42 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void help() {
-        BaseDialog dialog = new BaseDialog("Help");
+        BaseDialog dialog = new BaseDialog(Core.bundle.get("mlogdevtools.help"));
         dialog.titleTable.visible(() -> false).setHeight(0f);
         dialog.cont.pane(p -> {
             p.table(Tex.button, t -> {
-                TextButton.TextButtonStyle style = Styles.squareTogglet;
                 t.defaults().fillX().pad(6f, 15f, 6f, 15f).left();
 
-                t.add("Available commands").colspan(3).color(Pal.accent).center().padBottom(10f).get().setAlignment(Align.center);
+                t.add(Core.bundle.get("mlogdevtools.availablecommands")).colspan(3).color(Pal.accent).center().padBottom(10f).get().setAlignment(Align.center);
                 t.row();
 
                 help(t, Icon.left, Icon.right, mobile
-                        ? "Navigate to the previous/next snapshot (or swipe the header left/right)."
-                        : "Navigate to the previous/next snapshot (also the PgUp/PgDn and Home/End keys).");
-                help(t, Icon.filters, "Customize the view (for the duration of the session).");
-                help(t, Icon.edit, "Export, import or modify the data of this block.");
-                help(t, Icon2.log, "Show the current processor's log.");
-                help(t, Icon.chartBar, "Profile the current processor's execution.");
-                help(t, Icon.pause, Icon.play, "Pause/resume the game.");
-                help(t, Icon.folderOpen, "Show a list of this block's snapshots.");
-                help(t, Icon.logic, "Navigate to a different block contained in this snapshot.");
-                help(t, Icon.box, "Create a new snapshot of this block and all connected blocks.");
-                help(t, Icon.infoCircle, "Show this help.");
+                        ? Core.bundle.get("mlogdevtools.vars.help.mobilenavigation")
+                        : Core.bundle.get("mlogdevtools.vars.help.desktopnavigation"));
+                help(t, Icon.filters, Core.bundle.get("mlogdevtools.vars.help.filters"));
+                help(t, Icon.edit, Core.bundle.get("mlogdevtools.vars.help.edit"));
+                help(t, Icon2.log, Core.bundle.get("mlogdevtools.vars.help.log"));
+                help(t, Icon.chartBar, Core.bundle.get("mlogdevtools.vars.help.profile"));
+                help(t, Icon.pause, Icon.play, Core.bundle.get("mlogdevtools.vars.help.pause"));
+                help(t, Icon.folderOpen, Core.bundle.get("mlogdevtools.vars.help.snapshotsopen"));
+                help(t, Icon.logic, Core.bundle.get("mlogdevtools.vars.help.snapshotsselect"));
+                help(t, Icon.box, Core.bundle.get("mlogdevtools.vars.help.snapshotscreate"));
+                help(t, Icon.infoCircle, Core.bundle.get("mlogdevtools.help.help"));
 
-                t.add("Edit commands").colspan(3).color(Pal.accent).center().padBottom(15F).get().setAlignment(Align.center);
+                t.add(Core.bundle.get("mlogdevtools.editcommands")).colspan(3).color(Pal.accent).center().padBottom(15F).get().setAlignment(Align.center);
                 t.row();
 
-                help(t, Icon.cancel, "Reset memory block to all zeroes.");
-                help(t, Icon.copy, "Copy values to the clipboard.");
-                help(t, Icon.upload, "Export values to a file.");
-                help(t, Icon.paste, "Import memory block values from Clipboard.");
-                help(t, Icon.download, "Import memory block values from a file.");
-                help(t, Icon.undo, "Restore the current processor or memory block's state from the selected snapshot.");
-                help(t, Icon.trash, "Delete the current snapshot.");
-                help(t, Icon.trash, "Delete all snapshots of this block (they may still be accessible as part of connected or global snapshots).");
+                help(t, Icon.cancel, Core.bundle.get("mlogdevtools.vars.help.memoryreset"));
+                help(t, Icon.copy, Core.bundle.get("mlogdevtools.vars.help.copy"));
+                help(t, Icon.upload, Core.bundle.get("mlogdevtools.vars.help.export"));
+                help(t, Icon.paste, Core.bundle.get("mlogdevtools.vars.help.paste"));
+                help(t, Icon.download, Core.bundle.get("mlogdevtools.vars.help.import"));
+                help(t, Icon.undo, Core.bundle.get("mlogdevtools.vars.help.restore"));
+                help(t, Icon.trash, Core.bundle.get("mlogdevtools.vars.help.delete"));
+                help(t, Icon.trash, Core.bundle.get("mlogdevtools.vars.help.deleteall"));
 
                 t.defaults().size(180f, 60f).growX().colspan(3).pad(15f);
-                t.button("@back", Icon.left, Styles.defaultt, dialog::hide).center().marginLeft(12f).name("back");
+                t.button("@back", Icon.left, Styles.defaultt, dialog::hide).center().marginLeft(12f).name(s("back"));
             }).pad(10f).padRight(30f);
         });
 
@@ -515,7 +512,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void viewOptions() {
-        BaseDialog dialog = new BaseDialog("@varsdialog.options");
+        BaseDialog dialog = new BaseDialog("@mlogdevtools.vars.options");
         dialog.titleTable.visible(() -> false);
         dialog.cont.pane(p -> {
             p.margin(10f);
@@ -523,39 +520,40 @@ public class VarsDialog extends BaseDialog {
                 TextButton.TextButtonStyle style = Styles.squareTogglet;
                 t.defaults().height(45f).growX().fillX().uniformX().colspan(3).pad(3f).left();
 
-                t.add("View customization").colspan(6).color(Pal.accent).center().padBottom(10f).get().setAlignment(Align.center);
+                t.add(Core.bundle.get("mlogdevtools.vars.customization")).colspan(6).color(Pal.accent).center().padBottom(10f).get().setAlignment(Align.center);
                 t.row();
 
                 ButtonGroup<TextButton> hexGroup = new ButtonGroup<>();
-                t.button("@varsdialog.dec", style, () -> refreshView(Constants.varsHexadecimal, hex = false)).name("dec").group(hexGroup).checked(!hex);
-                t.button("@varsdialog.hex", style, () -> refreshView(Constants.varsHexadecimal, hex = true)).name("hex").group(hexGroup).checked(hex);
+                t.button(Core.bundle.get("mlogdevtools.vars.dec"), style, () -> refreshView(Constants.varsHexadecimal, hex = false)).name(s("dec")).group(hexGroup).checked(!hex);
+                t.button(Core.bundle.get("mlogdevtools.vars.hex"), style, () -> refreshView(Constants.varsHexadecimal, hex = true)).name(s("hex")).group(hexGroup).checked(hex);
                 t.row();
                 ButtonGroup<TextButton> sortedGroup = new ButtonGroup<>();
-                t.button("@varsdialog.sorted", style, () -> updateView(Constants.varsSorted, sorted = true)).name("sorted").group(sortedGroup).checked(sorted);
-                t.button("@varsdialog.unsorted", style, () -> updateView(Constants.varsSorted, sorted = false)).name("unsorted").group(sortedGroup).checked(!sorted);
+                t.button(Core.bundle.get("mlogdevtools.vars.sorted"), style, () -> updateView(Constants.varsSorted, sorted = true)).name(s("sorted")).group(sortedGroup).checked(sorted);
+                t.button(Core.bundle.get("mlogdevtools.vars.unsorted"), style, () -> updateView(Constants.varsSorted, sorted = false)).name(s("unsorted")).group(sortedGroup).checked(!sorted);
                 t.row();
                 ButtonGroup<TextButton> tempsGroup = new ButtonGroup<>();
-                t.button("@varsdialog.showall", style, () -> updateView(Constants.varsHideTemps, filtered = false)).name("showall").group(tempsGroup).checked(!filtered);
-                t.button("@varsdialog.hidetemps", style, () -> updateView(Constants.varsHideTemps, filtered = true)).name("hidetemps").group(tempsGroup).checked(filtered);
+                t.button(Core.bundle.get("mlogdevtools.vars.showall"), style, () -> updateView(Constants.varsHideTemps, filtered = false)).name(s("showall")).group(tempsGroup).checked(!filtered);
+                t.button(Core.bundle.get("mlogdevtools.vars.hidetemps"), style, () -> updateView(Constants.varsHideTemps, filtered = true)).name(s("hidetemps")).group(tempsGroup).checked(filtered);
                 t.row();
                 ButtonGroup<TextButton> linksGroup = new ButtonGroup<>();
-                t.button("@varsdialog.showlinks", style, () -> updateView(Constants.varsHideLinks, hideLinks = false)).name("showlinks").group(linksGroup).checked(!hideLinks);
-                t.button("@varsdialog.hidelinks", style, () -> updateView(Constants.varsHideLinks, hideLinks = true)).name("hidelinks").group(linksGroup).checked(hideLinks);
+                t.button(Core.bundle.get("mlogdevtools.vars.showlinks"), style, () -> updateView(Constants.varsHideLinks, hideLinks = false)).name(s("showlinks")).group(linksGroup).checked(!hideLinks);
+                t.button(Core.bundle.get("mlogdevtools.vars.hidelinks"), style, () -> updateView(Constants.varsHideLinks, hideLinks = true)).name(s("hidelinks")).group(linksGroup).checked(hideLinks);
                 t.row();
                 ButtonGroup<TextButton> precisionGroup = new ButtonGroup<>();
-                t.button(Core.bundle.format("varsdialog.limitedprecission", significantDigits), style,
-                        () -> updateView(Constants.varsFullPrecision, fullPrecision = false)).name("limitedprecission").group(precisionGroup).checked(!fullPrecision);
-                t.button("@varsdialog.fullprecision", style, () -> updateView(Constants.varsFullPrecision, fullPrecision = true)).name("hidelinks").group(precisionGroup).checked(fullPrecision);
+                t.button(Core.bundle.format("mlogdevtools.vars.limitedprecision", significantDigits), style,
+                        () -> updateView(Constants.varsFullPrecision, fullPrecision = false)).name(s("limitedprecision")).group(precisionGroup).checked(!fullPrecision);
+                t.button(Core.bundle.get("mlogdevtools.vars.fullprecision"), style,
+                        () -> updateView(Constants.varsFullPrecision, fullPrecision = true)).name(s("fullprecision")).group(precisionGroup).checked(fullPrecision);
                 t.row();
                 ButtonGroup<TextButton> alignmentGroup = new ButtonGroup<>();
                 t.defaults().height(45f).growX().fillX().uniformX().colspan(2).pad(3f).left();
-                t.button("Left", style, () -> updateView(Constants.varsAlignment, alignment = Align.left)).group(alignmentGroup).checked(alignment == Align.left);
-                t.button("Center", style, () -> updateView(Constants.varsAlignment, alignment = Align.center)).group(alignmentGroup).checked(alignment == Align.center);
-                t.button("Right", style, () -> updateView(Constants.varsAlignment, alignment = Align.right)).group(alignmentGroup).checked(alignment == Align.right);
+                t.button(Core.bundle.get("mlogdevtools.vars.left"), style, () -> updateView(Constants.varsAlignment, alignment = Align.left)).group(alignmentGroup).checked(alignment == Align.left);
+                t.button(Core.bundle.get("mlogdevtools.vars.center"), style, () -> updateView(Constants.varsAlignment, alignment = Align.center)).group(alignmentGroup).checked(alignment == Align.center);
+                t.button(Core.bundle.get("mlogdevtools.vars.right"), style, () -> updateView(Constants.varsAlignment, alignment = Align.right)).group(alignmentGroup).checked(alignment == Align.right);
                 t.row();
 
                 t.defaults().height(60f).growX().fillX().uniformX().colspan(6).pad(15f);
-                t.button("@back", Icon.left, Styles.flatt, dialog::hide).marginLeft(12f).name("back");
+                t.button("@back", Icon.left, Styles.flatt, dialog::hide).marginLeft(12f).name(s("back"));
             }).width(350f).growX();
         });
 
@@ -572,88 +570,88 @@ public class VarsDialog extends BaseDialog {
                 t.defaults().size(360f, 60f).left();
 
                 if (SnapshotManager.maxSnapshots <= 0 && entity instanceof LogicBlock.LogicBuild build) {
-                    t.button("Log", Icon2.log, style, () -> {
+                    t.button(Core.bundle.get("mlogdevtools.vars.log"), Icon2.log, style, () -> {
                         LogDialog.show(build);
                         dialog.hide();
                     }).marginLeft(12f).row();
 
-                    t.button("Profiler", Icon.chartBar, style, () -> {
+                    t.button(Core.bundle.get("mlogdevtools.vars.profiler"), Icon.chartBar, style, () -> {
                         ProfileDialog.show(build);
                         dialog.hide();
                     }).marginLeft(12f).row();
                 }
 
                 if (snapshots.view().dataType() == EntityDataType.memory && snapshots.view().live()) {
-                    t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
+                    t.button(Core.bundle.get("mlogdevtools.vars.clearmemory"), Icon.cancel, style, () -> {
                         snapshots.view().clear();
                         Arrays.fill(counter, reset / 2);  // Animate change
                         dialog.hide();
                     }).marginLeft(12f).row();
                 }
 
-                t.button("@varsdialog.copyvariables", Icon.copy, style, () -> {
+                t.button(Core.bundle.get("mlogdevtools.vars.copyvariables"), Icon.copy, style, () -> {
                     Core.app.setClipboardText(MemoryText.write(snapshots.view(), hex));
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                t.button("@varsdialog.exportvariablesfile", Icon.upload, style, () -> {
-                    FileChooser.save("txt").name("memory_export.txt").submit(file -> {
+                t.button(Core.bundle.get("mlogdevtools.vars.exportvariablesfile"), Icon.upload, style, () -> {
+                    FileChooser.save(s("txt")).name("memory_export.txt").submit(file -> {
                         try {
                             file.writeString(MemoryText.write(snapshots.view(), hex));
                         } catch (Exception e) {
-                            Log.err("[Mlog Dev Tools] Error writing file: ", e);
-                            ui.showErrorMessage("Error writing file " + file.absolutePath());
+                            MlogDevTools.err("Error writing file: ", e);
+                            ui.showErrorMessage(Core.bundle.format("mlogdevtools.writeerror", file.absolutePath()));
                         }
                     });
                     dialog.hide();
                 }).marginLeft(12f).row();
 
                 if (snapshots.view().dataType() == EntityDataType.memory && snapshots.view().live()) {
-                    t.button("@varsdialog.importvariables", Icon.paste, style, () -> {
+                    t.button(Core.bundle.get("mlogdevtools.vars.importvariables"), Icon.paste, style, () -> {
                         String text = Core.app.getClipboardText();
-                        if (text == null || text.length() == 0) {
-                            ui.showErrorMessage("The clipboard is empty.");
+                        if (text == null || text.isEmpty()) {
+                            ui.showErrorMessage(Core.bundle.get("mlogdevtools.vars.emptyclipboard"));
                         } else {
                             importData(text);
                         }
                         dialog.hide();
                     }).marginLeft(12f).row();
 
-                    t.button("@varsdialog.importvariablesfile", Icon.download, style, () -> {
-                        FileChooser.open("txt").submit(file -> {
+                    t.button(Core.bundle.get("mlogdevtools.vars.importvariablesfile"), Icon.download, style, () -> {
+                        FileChooser.open(s("txt")).submit(file -> {
                             try {
                                 String text = file.readString();
 
                                 if (text == null) {
-                                    ui.showErrorMessage("Error reading file " + file.absolutePath());
+                                    ui.showErrorMessage(Core.bundle.format("mlogdevtools.readerror", file.absolutePath()));
                                 } else {
                                     importData(text);
                                 }
                             } catch (Exception e) {
-                                Log.err("[Mlog Dev Tools] Error reading file: ", e);
-                                ui.showErrorMessage("Error reading file " + file.absolutePath());
+                                MlogDevTools.err("Error reading file: ", e);
+                                ui.showErrorMessage(Core.bundle.format("mlogdevtools.readerror", file.absolutePath()));
                             }
                         });
                         dialog.hide();
                     }).marginLeft(12f).row();
                 }
 
-                if (snapshots.view().dataType() != EntityDataType.entity && snapshots.view() instanceof Snapshot snapshot) {
-                    t.button("Restore current snapshot", Icon.undo, style, this::restoreSnapshot).marginLeft(12f).row();
+                if (snapshots.view().dataType() != EntityDataType.entity && snapshots.view() instanceof Snapshot) {
+                    t.button(Core.bundle.get("mlogdevtools.vars.restore"), Icon.undo, style, this::restoreSnapshot).marginLeft(12f).row();
                 }
 
                 if (snapshots.canRemove()) {
                     // Can't remove snapshots from snapshot groups
-                    t.button("Delete current snapshot", Icon.trash, style, this::removeSnapshot).marginLeft(12f).row();
+                    t.button(Core.bundle.get("mlogdevtools.vars.delete"), Icon.trash, style, this::removeSnapshot).marginLeft(12f).row();
                 }
 
-                t.button("Delete all snapshots of this block", Icon.trash, style, () -> {
+                t.button(Core.bundle.get("mlogdevtools.vars.deleteall"), Icon.trash, style, () -> {
                     SnapshotManager.deleteEntity(snapshots.view().entity());
                     dialog.hide();
                     first();
                 }).marginLeft(12f).row();
 
-                t.button("@back", Icon.left, style, dialog::hide).padTop(10f).marginLeft(12f).name("back");
+                t.button("@back", Icon.left, style, dialog::hide).padTop(10f).marginLeft(12f).name(s("back"));
             });
         });
 
@@ -668,7 +666,7 @@ public class VarsDialog extends BaseDialog {
         }
 
         if (error != null) {
-            ui.showErrorMessage(Core.bundle.format("varsdialog.importfailed", error));
+            ui.showErrorMessage(Core.bundle.format("mlogdevtools.vars.importfailed", error));
         } else {
             Arrays.fill(counter, reset / 2);
         }

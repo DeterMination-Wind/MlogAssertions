@@ -26,8 +26,11 @@ import mindustry.graphics.Pal;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
+import org.jetbrains.annotations.NonNls;
 
 import java.util.Arrays;
+
+import static cardillan.mlogassertions.MlogDevTools.s;
 
 public class ProfileDialog extends BaseDialog {
     static boolean totals = true;
@@ -51,7 +54,7 @@ public class ProfileDialog extends BaseDialog {
     }
 
     private ProfileDialog(LogicBuild build) {
-        super("Profiler", Styles.fullDialog);
+        super(Core.bundle.get("mlogdevtools.profiler.title"), Styles.fullDialog);
         this.build = build;
 
         instrumentation = InstrumentationEngine.getInstrumentation(build);
@@ -70,9 +73,9 @@ public class ProfileDialog extends BaseDialog {
         return Math.max(180f, Math.min(Core.graphics.getWidth() / Scl.scl(1.05f) - 210f, 800f));
     }
 
-    int indexes[];
-    int prevIndex[];
-    long sortArray[];
+    int[] indexes;
+    int[] prevIndex;
+    long[] sortArray;
 
     private void sort() {
         int size = instrumentation.size;
@@ -191,18 +194,18 @@ public class ProfileDialog extends BaseDialog {
 
                                 if (branches) {
                                     branchLabel.setText(instrumentation.branching[index] < 0 ? "" : percents
-                                            ? formatPercent(instrumentation.branching[index], instrumentation.steps[index], "%.1f%%")
+                                            ? formatPercent(instrumentation.branching[index], instrumentation.steps[index], s("%.1f%%"))
                                             : formatNumber(instrumentation.branching[index]));
                                 }
 
                                 if (execTime) {
                                     countLabel.setText(percents
-                                            ? formatPercent(instrumentation.time[index], instrumentation.totalTime, "%.2f%%")
+                                            ? formatPercent(instrumentation.time[index], instrumentation.totalTime, s("%.2f%%"))
                                             : formatNumber(instrumentation.time[index]));
                                     ratio.progress = (float) (instrumentation.time[index] / instrumentation.maxTime);
                                 } else {
                                     countLabel.setText(percents
-                                            ? formatPercent(instrumentation.steps[index], instrumentation.totalSteps, "%.2f%%")
+                                            ? formatPercent(instrumentation.steps[index], instrumentation.totalSteps, s("%.2f%%"))
                                             : formatNumber(instrumentation.steps[index]));
                                     ratio.progress = instrumentation.steps[index] / (float) instrumentation.maxSteps;
                                 }
@@ -221,9 +224,9 @@ public class ProfileDialog extends BaseDialog {
                     main.row();
                     main.table(t -> {
                         String[] titles = {
-                                execTime ? "Total execution quota spent" : "Total instructions executed",
-                                "Execution quota lost to yields",
-                                "Code coverage (" + instrumentation.size + " instructions in total)"
+                                Core.bundle.get(execTime ? "mlogdevtools.profiler.quotaspent" : "mlogdevtools.profiler.execcount"),
+                                Core.bundle.get("mlogdevtools.profiler.lostquota"),
+                                Core.bundle.format("mlogdevtools.profiler.codecoverage", instrumentation.size)
                         };
                         Prov[] values = {
                                 execTime ? () -> formatNumber(instrumentation.totalTime) : () -> formatNumber(instrumentation.totalSteps),
@@ -271,14 +274,13 @@ public class ProfileDialog extends BaseDialog {
             });
         } else {
             cont.table(t -> {
-                t.add("Profiler records the number of times each instruction executes. Once activated, it remains active even after leaving this screen, until stopped.\n\n" +
-                        "If the processor's code gets updated, the profiler remains active, but the data gathered so far are cleared.")
+                t.add(Core.bundle.get("mlogdevtools.profiler.initialmessage"))
                         .color(Color.lightGray).width(410f).minWidth(410f).wrap(true).padBottom(30f);
                 t.row();
-                t.check("Do not show again", b -> Core.settings.put(Constants.startProfilerImmediately, b))
+                t.check(Core.bundle.get("mlogdevtools.profiler.donotshow"), b -> Core.settings.put(Constants.startProfilerImmediately, b))
                         .padBottom(30f).growX().fillX();
                 t.row();
-                t.button("Start profiling", Icon.chartBar, Styles.flatBordert, () -> setup(InstrumentationEngine.startProfiling(build)))
+                t.button(Core.bundle.get("mlogdevtools.profiler.start"), Icon.chartBar, Styles.flatBordert, () -> setup(InstrumentationEngine.startProfiling(build)))
                         .height(64f).growX().fillX();
             }).left();
         }
@@ -289,7 +291,7 @@ public class ProfileDialog extends BaseDialog {
         return number == 0 ? "-" : String.valueOf(number);
     }
 
-    private String formatPercent(int part, int total, String format) {
+    private String formatPercent(int part, int total, @NonNls String format) {
         if (total <= 0 || part <= 0) return "-";
         if (part >= total) return "100%";
         String result = String.format(format, 100d * part / total);
@@ -300,7 +302,7 @@ public class ProfileDialog extends BaseDialog {
         return formatNumber((int) number);
     }
 
-    private String formatPercent(double part, double total, String format) {
+    private String formatPercent(double part, double total, @NonNls String format) {
         if (total <= 0 || part <= 0) return "-";
         if (part >= total) return "100%";
         String result = String.format(format, 100 * part / total);
@@ -318,9 +320,9 @@ public class ProfileDialog extends BaseDialog {
     private void copyToClipboard() {
         StringBuilder sb = new StringBuilder(200 * instrumentation.size);
         sb.append("#")
-                .append("\t").append("Instruction")
-                .append("\t").append("Execution steps")
-                .append("\t").append("Execution quota")
+                .append("\t").append(s("Instruction"))
+                .append("\t").append(s("Execution steps"))
+                .append("\t").append(s("Execution quota"))
                 .append("\n");
 
         for (int i = 0; i < instrumentation.size; i++) {
@@ -346,22 +348,22 @@ public class ProfileDialog extends BaseDialog {
                 TextButton.TextButtonStyle style = Styles.flatt;
                 t.defaults().size(360f, 60f).left();
 
-                t.button("Reset data", Icon.cancel, style, () -> {
+                t.button(Core.bundle.get("mlogdevtools.profiler.reset"), Icon.cancel, style, () -> {
                     setup(InstrumentationEngine.clearProfilingData(build));
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                t.button("Reset data and restart processor", Icon.refresh, style, () -> {
+                t.button(Core.bundle.get("mlogdevtools.profiler.restart"), Icon.refresh, style, () -> {
                     restart();
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                t.button("Copy profiling data\nto clipboard", Icon.copy, style, () -> {
+                t.button(Core.bundle.get("mlogdevtools.profiler.copy"), Icon.copy, style, () -> {
                     copyToClipboard();
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                t.button("@back", Icon.left, style, dialog::hide).padTop(10f).marginLeft(12f).name("back");
+                t.button("@back", Icon.left, style, dialog::hide).padTop(10f).marginLeft(12f).name(s("back"));
             });
         });
 
@@ -370,35 +372,34 @@ public class ProfileDialog extends BaseDialog {
     }
 
     private void help() {
-        BaseDialog dialog = new BaseDialog("Help");
+        BaseDialog dialog = new BaseDialog(Core.bundle.get("mlogdevtools.help"));
         dialog.titleTable.visible(() -> false).setHeight(0f);
         dialog.cont.pane(p -> {
             p.table(Tex.button, t -> {
-                TextButton.TextButtonStyle style = Styles.squareTogglet;
                 t.defaults().fillX().pad(6f, 15f, 6f, 15f).left();
 
-                t.add("Available commands").colspan(3).color(Pal.accent).center().padBottom(10f).get().setAlignment(Align.center);
+                t.add(Core.bundle.get("mlogdevtools.availablecommands")).colspan(3).color(Pal.accent).center().padBottom(10f).get().setAlignment(Align.center);
                 t.row();
 
-                help(t, Icon.chartBar, "Start or stop profiling the current processor.");
-                help(t, Icon.edit, "Reset, restart or copy profiling data.");
-                help(t, Icon2.time, "Display execution quota spent by instructions instead of execution steps (the [accent]wait[] instruction may spend lots of execution quota waiting).");
-                help(t, Icon2.sortDesc, "Sort the instructions by execution steps/quota.");
-                help(t, Icon2.percent, "Display percentages instead of raw values.");
-                help(t, Icon2.branching, "Show the number of jumps made by jump instructions.");
-                help(t, Icon2.sum, "Show profiling totals.");
-                help(t, Icon.tag, "Use the instruction's category color in the list.");
-                help(t, Icon.infoCircle, "Show this help.");
+                help(t, Icon.chartBar, Core.bundle.get("mlogdevtools.profiler.help.startstop"));
+                help(t, Icon.edit, Core.bundle.get("mlogdevtools.profiler.help.edit"));
+                help(t, Icon2.time, Core.bundle.get("mlogdevtools.profiler.help.quota"));
+                help(t, Icon2.sortDesc, Core.bundle.get("mlogdevtools.profiler.help.sort"));
+                help(t, Icon2.percent, Core.bundle.get("mlogdevtools.profiler.help.percent"));
+                help(t, Icon2.branching, Core.bundle.get("mlogdevtools.profiler.help.branching"));
+                help(t, Icon2.sum, Core.bundle.get("mlogdevtools.profiler.help.totals"));
+                help(t, Icon.tag, Core.bundle.get("mlogdevtools.profiler.help.colors"));
+                help(t, Icon.infoCircle, Core.bundle.get("mlogdevtools.help.help"));
 
-                t.add("Edit commands").colspan(3).color(Pal.accent).center().padBottom(15F).get().setAlignment(Align.center);
+                t.add(Core.bundle.get("mlogdevtools.editcommands")).colspan(3).color(Pal.accent).center().padBottom(15F).get().setAlignment(Align.center);
                 t.row();
 
-                help(t, Icon.cancel, "Clear the current processor's profiling data.");
-                help(t, Icon.refresh, "Restart the current processor and activate profiling from the beginning (existing profiling data are cleared).");
-                help(t, Icon.copy, "Copy the profiling data into the clipboard in a tab-separated format (instruction #, instruction text, execution steps and quota).");
+                help(t, Icon.cancel, Core.bundle.get("mlogdevtools.profiler.help.reset"));
+                help(t, Icon.refresh, Core.bundle.get("mlogdevtools.profiler.help.restart"));
+                help(t, Icon.copy, Core.bundle.get("mlogdevtools.profiler.help.copy"));
 
                 t.defaults().size(180f, 60f).growX().colspan(3).pad(15f);
-                t.button("@back", Icon.left, Styles.defaultt, dialog::hide).center().marginLeft(12f).name("back");
+                t.button("@back", Icon.left, Styles.defaultt, dialog::hide).center().marginLeft(12f).name(s("back"));
             }).pad(10f).padRight(30f);
         });
 

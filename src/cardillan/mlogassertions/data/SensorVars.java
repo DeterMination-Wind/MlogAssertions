@@ -1,15 +1,17 @@
     package cardillan.mlogassertions.data;
 
-import arc.func.Cons;
-import mindustry.Vars;
-import mindustry.ctype.Content;
-import mindustry.ctype.MappableContent;
-import mindustry.gen.Building;
-import mindustry.logic.LAccess;
-import mindustry.logic.LVar;
-import mindustry.logic.Senseable;
+    import arc.func.Cons;
+    import mindustry.Vars;
+    import mindustry.ctype.Content;
+    import mindustry.ctype.MappableContent;
+    import mindustry.gen.Building;
+    import mindustry.logic.LAccess;
+    import mindustry.logic.LVar;
+    import mindustry.logic.Senseable;
 
-public class SensorVars extends BaseVariableValues {
+    import static cardillan.mlogassertions.MlogDevTools.s;
+
+    public class SensorVars extends BaseVariableValues {
     protected static LAccess[] accesses = getAccesses();
     protected static String[] accessLabels = new String[accesses.length];
     protected static String[] itemLabels = new String[Vars.content.items().size];
@@ -31,16 +33,16 @@ public class SensorVars extends BaseVariableValues {
 
     static {
         for (int i = 0; i < accessLabels.length; i++) {
-            accessLabels[i] = " @" + accesses[i].name() + " ";
+            accessLabels[i] = s(" @" + accesses[i].name() + " ");
         }
 
         for (int i = 0; i < itemLabels.length; i++) {
             items[i] = Vars.content.items().get(i);
-            itemLabels[i] = " @" + items[i].name + " ";
+            itemLabels[i] = s(" @" + items[i].name + " ");
         }
         for (int i = 0; i < liquidLabels.length; i++) {
             liquids[i] = Vars.content.liquids().get(i);
-            liquidLabels[i] = " @" + liquids[i].name + " ";
+            liquidLabels[i] = s(" @" + liquids[i].name + " ");
         }
     }
 
@@ -72,7 +74,7 @@ public class SensorVars extends BaseVariableValues {
     }
 
     private boolean hasItems() {
-        return entity instanceof Building && ((Building)entity).block.hasItems || entity instanceof Senseable;
+        return entity instanceof Building && ((Building)entity).block.hasItems;
     }
 
     private boolean hasLiquids() {
@@ -82,11 +84,6 @@ public class SensorVars extends BaseVariableValues {
     @Override
     public EntityDataType dataType() {
         return EntityDataType.entity;
-    }
-
-    @Override
-    public Senseable entity() {
-        return entity;
     }
 
     @Override
