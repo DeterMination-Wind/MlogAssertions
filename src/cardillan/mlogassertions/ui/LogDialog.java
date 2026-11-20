@@ -307,6 +307,7 @@ public class LogDialog extends BaseDialog {
             // Processor
             if (connected) {
                 row.add(pos(message.build.x, message.build.y))
+                        .color(Color.gray)
                         .minWidth(130)
                         .center()
                         .get().setAlignment(Align.center);

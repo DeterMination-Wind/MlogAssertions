@@ -539,7 +539,7 @@ public class LogicInstructions {
             String str;
             if (end == pos + 2 && sbr.charAt(pos + 1) >= '1' && sbr.charAt(pos + 1) <= '9') {
                 int index = sbr.charAt(pos + 1) - '1' + offset;
-                str = index < arguments.length ? print(arguments[index], true) : null;
+                str = index < arguments.length ? print(arguments[index]) : null;
                 used |= (1 << index);
             } else {
                 LVar var = exec.optionalVar(sbr.substring(pos + 1, end));
@@ -568,11 +568,7 @@ public class LogicInstructions {
     }
 
     private static String print(Object message) {
-        return print(message, false);
-    }
-
-    private static String print(Object message, boolean formatString) {
-        return message instanceof LVar lvar ? print(lvar, formatString) : String.valueOf(message);
+        return message instanceof LVar lvar ? print(lvar, false) : String.valueOf(message);
     }
 
     private static String print(LVar var, boolean formatString) {

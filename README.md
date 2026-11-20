@@ -2,7 +2,7 @@
 
 [中文介绍](README_zh.md)
 
-A mod formely known as Mlog Assertions.
+A mod formerly known as Mlog Assertions.
 
 > [!NOTE]
 > Using this mod on maps with lots of processors may impact the game's performance.
@@ -40,7 +40,7 @@ The exported data  may be modified (for example in a spreadsheet) and imported b
 
 # Inspecting other blocks
 
-By tripple-tapping any blok, the **Properties** screen is displayed. The screen contains a list of all properties of the block in real-time in a format similar to the **Vars**/**Memory** screens. 
+By triple-tapping any block, the **Properties** screen is displayed. The screen contains a list of all properties of the block in real-time in a format similar to the **Vars**/**Memory** screens. 
 
 # Snapshots
 
@@ -52,21 +52,21 @@ There are several types of snapshots:
 
 * _isolated_: keep a state of just a single block. Can be created using the `snapshot` instruction.
 * _connected_: keep a state of a central block and related entities (blocks and units). Related blocks and units are those which are stored in any of the variables of the central block (typically a processor or a memory block). in case of processors, all units controlled by the processor at the time of the snapshot's creation are also included. 
-* _recording_: a special snapshot which records the execution of several instructions. It can be created using the `snapshot` instruction, which specifies the target (either `@this`, or some other processor) and the number of steps to record. A recording snapshot shows the initial state of the processor and any connected blocks, and when selected in the snapshot list, allows navigation thorugh individual instruction-related snapshots. Each instruction snapshot shows the variables and contains any objects used by the instruction. The number of individual snapshots stored in a recording snapshot is subject to the snapshot limit in the settings.
+* _recording_: a special snapshot which records the execution of several instructions. It can be created using the `snapshot` instruction, which specifies the target (either `@this`, or some other processor) and the number of steps to record. A recording snapshot shows the initial state of the processor and any connected blocks, and when selected in the snapshot list, allows navigation through individual instruction-related snapshots. Each instruction snapshot shows the variables and contains any objects used by the instruction. The number of individual snapshots stored in a recording snapshot is subject to the snapshot limit in the settings.
 * _global_: a global snapshot holds the state of all _logic_ blocks on the map (i.e., only processors and memory cells, not all blocks in general).
 
 Snapshots are always assigned to a specific block and are kept in a list for that block. When the number of snapshots reaches a (configurable) limit, older snapshots get removed from each block.
 
-Connected, recording and global snaphots are reachable from any block included in them. A snapshot ceases to exist when it ages out of all blocks contained in it.
+Connected, recording and global snapshots are reachable from any block included in them. A snapshot ceases to exist when it ages out of all blocks contained in it.
 
 > [!NOTE]
 > Snapshots aren't saved with the map; when the map is closed, all snapshots are lost.
 
 ## Snapshot creation and usage
 
-A connected snapshot can be created from an UI, using the **Vars**/**Memory**/**Properties** screens, or (in case of processors and memory cells) using the block configuration menu.
+A connected snapshot can be created from a UI, using the **Vars**/**Memory**/**Properties** screens, or (in case of processors and memory cells) using the block configuration menu.
 
-A `snapshot` instruction can create any type of snapshot, using any block as the central one. There's no rate limit on creating snaphsots, but obviously there can be performance problems when the feature is abused.
+A `snapshot` instruction can create any type of snapshot, using any block as the central one. There's no rate limit on creating snapshots, but obviously there can be performance problems when the feature is abused.
 
 Snapshots can be inspected using the Vars/Memory/Properties screens. A processor or memory state can be restored from a snapshot.
 
@@ -80,21 +80,31 @@ A brief help is available on the **Vars**/**Memory**/**Properties** screens.
 
 ## Settings
 
-Snapshots can be completely deactivated in settings by seting the maximum number of kept snapshots to 0. When disabled, snapshots can't be created in any wany and no snapshot-related elements appear in the UI.
+Snapshots can be completely deactivated in settings by setting the maximum number of kept snapshots to 0. When disabled, snapshots can't be created in any wany and no snapshot-related elements appear in the UI.
 
 It is possible to activate creating a snapshot when a breakpoint it hit or an assertion fails.
 
 # Profiler
 
-By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displaed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are uptated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, using the [`profile` instruction](#instruction-profile), or using a [custom game rule](#custom-game-rules).
+By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displayed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are updated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, using the [`profile` instruction](#instruction-profile), or using a [custom game rule](#custom-game-rules).
 
 Profiling a program allows you to identify the instructions the processor has spent the most time executing. Profiling is relatively low-cost (at least compared to the snapshotting), and can be safely left active on many processors for long periods of time.
 
 # Logging
 
-A message can be added to in-game log using the [`log` instruction](#instruction-log). Logged messages can be inspected on the **Log** screen, copied to the clipboard or saved to a file. Basic filtering by level and category is available. Logged messages aren't saved in the map file and are lost when exiting the map.
+A message can be added to an in-game log using the [`log` instruction](#instruction-log). Logged messages can be inspected on the **Log** screen, including logs from processors connected to the current one via links or variables. The log content can be copied to the clipboard or saved to a file. Basic filtering by level and category is available. Logged messages aren't saved in the map file and are lost when exiting the map.
 
-The maximum number of logged messages is configurable in settings. When the limit is reached, older messages are removed from the log.
+The maximum number of logged messages per processor is configurable in settings. When the limit is reached, older messages are removed from the log.
+
+On the log screen, all filtering buttons are initially unchecked, which deactivates the filter. When at least one level or category button is selected, only messages matching selected levels and categories are displayed.
+
+The log screen also includes buttons to switch between a live and paused/suspended mode:
+
+* **Live mode**: the logs are updated and displayed on the fly. At most a hundred of the latest messages matching the current filter are displayed, for performance reasons. Still, if the logic generates a lot of messages, the performance on some devices may suffer.
+* **Paused mode**: the game is paused, meaning no new logs are generated. At most 5,000 messages matching the current filter are displayed.
+* **Suspended mode**: the game is multiplayer and cannot be paused, but log updates are suspended. At most 5,000 messages from the connected processors are gathered, and the ones matching the filter are displayed. The set of log messages is stable and preserved until the **Live** mode is activated again.
+
+Even when displaying logs from multiple processors, the log messages are always shown in the order in which they were generated.
 
 # Custom instructions
 
@@ -174,7 +184,7 @@ This instruction compares the runtime data type to an expected value and display
 
 ## Instruction `assertflush`
 
-This instruction must be used at the beginning of a code section which generates text into the text buffer (using any of the printing instructions, `print`, `printchar` or `format`). The `assertprints` instruction is then used to compare the output generted by the program to an expected string. The instruction takes these parameters:
+This instruction must be used at the beginning of a code section which generates text into the text buffer (using any of the printing instructions, `print`, `printchar` or `format`). The `assertprints` instruction is then used to compare the output generated by the program to an expected string. The instruction takes these parameters:
 
 * `position`: output variable receiving the current position in the text buffer.
 
@@ -214,7 +224,7 @@ A variable name enclosed in curly braces (`{` and `}`, e.g. `"Accessing value at
 This instruction writes a message into the current processor's log. The logged messages can be viewed from the in-game UI. 
 
 * `level`: the log level of the message, one of `debug`, `info`, `warning`, or `err`.
-* `category`: the message's categroy. Should be a short string, although any values are suported and used after converted to a string.  
+* `category`: the message's category. Should be a short string, although any values are supported and used after converted to a string.  
 * `message`: the message to generate.
 * `p1` .. `p9`: additional parameters to display in the error message.
 
@@ -226,7 +236,7 @@ Starts, stops or clears the profiling data of a given processor, including `@thi
 
 ## Instruction `restart`
 
-Fully restarts the target processor, resetting all processor variables to `null`. This instruction is intendedd to allow profiling or snapshot recording of processor's initialization code from another processor, e.g.:
+Fully restarts the target processor, resetting all processor variables to `null`. This instruction is intended to allow profiling or snapshot recording of processor's initialization code from another processor, e.g.:
 
 ```
 restart processor1
@@ -235,7 +245,7 @@ snapshot recording processor1 100
 
 The instruction ensures that at least one other instruction will be executed after it in the same frame, so that profiling or snapshotting of the target processor is guaranteed to start from the very first instruction.
 
-If the goal is to activate profiling or snapshotting of teh current processor, a better way would be to add the `profile` or `snapshot` instruction at the beginning of the processor's code, unless the processor uses the implicit loop and cannot be easily modified.
+If the goal is to activate profiling or snapshotting of teh current processor, a better way would be to add the `profile` or `snapshot` instruction at the beginning of the processor's code, or activate the _Automatically profile all processors_ game rule.
 
 ## Instruction `snapshot`
 
@@ -244,12 +254,12 @@ Creates a snapshot of a given block. The instruction takes these parameters:
 * `type`: the type of snapshot to create:
   * `isolated`: captures only the state of the target block.
   * `connected`: captures the state of the target block plus the states of all blocks whose references are found in the variables of the target block - if the target block is a processor or a memory block.
-  * `recording`: creates an initial connected snapshot, followed by the specified number of instruction snapshots. The number of steps is limited by the meximum number of snapshots configured in settings. 
+  * `recording`: creates an initial connected snapshot, followed by the specified number of instruction snapshots. The number of steps is limited by the maximum number of snapshots configured in settings. 
   * `global`: captures the state of all processors and memory blocks on the map (regular blocks are not included).
 * `target`: the target block (not used for `global` snapshots).
 * `name`: the name of the snapshot.
 
-There's no rate limit on creating snaphsots, but obviously there can be performance problems when the feature is abused.
+There's no rate limit on creating snapshots, but obviously there can be performance problems when the feature is abused.
 
 ## Instruction `systemlog`
 
@@ -297,7 +307,7 @@ To indicate the stopped and waiting processors, the mod needs to inspect the sta
 
 Governs the use of visual effects on the map itself to draw attention to stopped or failed processors. Effects can be turned off completely, performed just once when the processor is stopped or failed, or performed periodically with a given interval. 
 
-## Tripple tap speed
+## Triple tap speed
 
 Triple-tapping a block within the configured interval opens the Sensors/Vars/Memory screen for the block.
 
