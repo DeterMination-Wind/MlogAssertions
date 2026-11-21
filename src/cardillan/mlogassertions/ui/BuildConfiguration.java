@@ -137,34 +137,29 @@ public class BuildConfiguration {
         @Override
         public void showConfig(Building building) {
             if (building instanceof MemoryBuild build) {
-                overrideConfig(build, false, table -> {
-                    if (SnapshotManager.maxSnapshots > 0) {
-                        table.button(Icon.box, Styles.cleari, () -> SnapshotManager.createUser(build)).size(40);
-                    }
-                    table.button(Icon.menu, Styles.cleari, () -> VarsDialog.show(build)).size(40);
-                });
+                overrideConfig(build,
+                        table -> {
+                            if (SnapshotManager.maxSnapshots > 0) {
+                                table.button(Icon.box, Styles.cleari, () -> SnapshotManager.createUser(build)).size(40);
+                            }
+                        },
+                        table -> table.button(Icon.menu, Styles.cleari, () -> VarsDialog.show(build)).size(40));
                 return;
             } else if (building instanceof LogicBuild build && build.executor.vars.length > 0) {
-                overrideConfig(build, false, table -> {
-                    Action left = getAction(true);
-                    Action right = getAction(false);
-                    left.createConfigButton(table, build);
-                    table.button(Icon.pencil, Styles.cleari, build::showEditDialog).size(40);
-                    if (right != left) right.createConfigButton(table, build);
-                });
-                return;
-            } else if (false) {
-                overrideConfig(building, true, table -> {
-                    building.buildConfiguration(table);
-                    table.button(Icon.zoom, Styles.cleari, () -> VarsDialog.show(building)).size(40);
-                });
+                Action left = getAction(true);
+                Action right = getAction(false);
+                overrideConfig(build,
+                        table -> left.createConfigButton(table, build),
+                        table -> {
+                            if (right != left) right.createConfigButton(table, build);
+                        });
                 return;
             }
 
             delegate.showConfig(building);
         }
 
-        private <T extends Building> void overrideConfig(T build, boolean append, Cons<Table> create) {
+        private <T extends Building> void overrideConfig(T build, Cons<Table> createLeft, Cons<Table> createRight) {
             try {
                 if (configSelected.get(delegate) instanceof Building bld) {
                     bld.onConfigureClosed();
@@ -175,10 +170,9 @@ public class BuildConfiguration {
                     table.visible = true;
                     table.clear();
                     table.background(null);
-                    if (append) {
-                        build.buildConfiguration(table);
-                    }
-                    create.get(table);
+                    createLeft.get(table);
+                    build.buildConfiguration(table);
+                    createRight.get(table);
                     table.pack();
                     table.setTransform(true);
                     table.actions(Actions.scaleTo(0f, 1f), Actions.visible(true),
