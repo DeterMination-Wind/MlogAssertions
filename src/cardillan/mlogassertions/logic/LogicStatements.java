@@ -283,7 +283,7 @@ public class LogicStatements {
             select(table, "", ops, opMin, o -> opMin = o, 2, 64f);
             table.add(bundle("value")).padLeft(10);
             select(table, "", ops, opMax, o -> opMax = o, 2, 64f);
-            fields(table, min, str -> min = str);
+            fields(table, max, str -> max = str);
             message(table, "message", s("Index out of bounds: {1}{4}{2}{5}{3}."));
         }
 
