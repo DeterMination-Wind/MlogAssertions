@@ -3,7 +3,7 @@ name: "mlog-assertions-8"
 subtitle: "Mlog development made easy",
 author: "cardillan"
 main: "cardillan.mlogassertions.MlogDevTools"
-version: 0.12.2
+version: 0.12.3
 minGameVersion: 160.5
 java: true
 hidden: true
