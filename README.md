@@ -42,9 +42,31 @@ The exported data  may be modified (for example in a spreadsheet) and imported b
 
 By triple-tapping any block, the **Properties** screen is displayed. The screen contains a list of all properties of the block in real-time in a format similar to the **Vars**/**Memory** screens. 
 
+# Profiler
+
+By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displayed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are updated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, using the [`profile` instruction](#instruction-profile), or using a [custom game rule](#custom-game-rules).
+
+Profiling a program allows you to identify the instructions the processor has spent the most time executing. Profiling is relatively low-cost (at least compared to the snapshotting), and can be safely left active on many processors for long periods of time.
+
+# Logging
+
+A message can be added to an in-game log using the [`log` instruction](#instruction-log). Logged messages can be inspected on the **Log** screen, including logs from processors connected to the current one via links or variables. The log content can be copied to the clipboard or saved to a file. Basic filtering by level and category is available. Logged messages aren't saved in the map file and are lost when exiting the map.
+
+The maximum number of logged messages per processor is configurable in settings. When the limit is reached, older messages are removed from the log.
+
+On the log screen, all filtering buttons are initially unchecked, which deactivates the filter. When at least one level or category button is selected, only messages matching selected levels and categories are displayed.
+
+The log screen also includes buttons to switch between a live and paused/suspended mode:
+
+* **Live mode**: the logs are updated and displayed on the fly. At most 100 of the latest messages matching the current filter are displayed, for performance reasons. Still, if the logic generates a lot of messages, the performance on some devices may suffer.
+* **Paused mode**: the game is paused, meaning no new logs are generated. At most 5,000 messages matching the current filter are displayed.
+* **Suspended mode**: the game is multiplayer and cannot be paused, but log updates are suspended. At most 5,000 messages from the connected processors are gathered, and the ones matching the filter are displayed. The set of log messages is stable and preserved until the **Live** mode is activated again.
+
+Even when displaying logs from multiple processors, the log messages are always shown in the order in which they were generated.
+
 # Snapshots
 
-A snapshot captures the state of a processor (all its variables), memory block (all cells) or a general block (all senseable properties). The mod allows creating and viewing snapshots.
+A snapshot captures the state of a processor (all its variables), memory block (all cells) or a general block (all sensable properties). The mod allows creating and viewing snapshots.
 
 ## Snapshot types
 
@@ -68,7 +90,7 @@ A connected snapshot can be created from a UI, using the **Vars**/**Memory**/**P
 
 A `snapshot` instruction can create any type of snapshot, using any block as the central one. There's no rate limit on creating snapshots, but obviously there can be performance problems when the feature is abused.
 
-Snapshots can be inspected using the Vars/Memory/Properties screens. A processor or memory state can be restored from a snapshot.
+Snapshots can be inspected using the **Vars**/**Memory**/**Properties** screens. A processor or memory state can be restored from a snapshot.
 
 A snapshot can be deleted from the UI.
 
@@ -82,29 +104,7 @@ A brief help is available on the **Vars**/**Memory**/**Properties** screens.
 
 Snapshots can be completely deactivated in settings by setting the maximum number of kept snapshots to 0. When disabled, snapshots can't be created in any wany and no snapshot-related elements appear in the UI.
 
-It is possible to activate creating a snapshot when a breakpoint it hit or an assertion fails.
-
-# Profiler
-
-By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displayed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are updated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, using the [`profile` instruction](#instruction-profile), or using a [custom game rule](#custom-game-rules).
-
-Profiling a program allows you to identify the instructions the processor has spent the most time executing. Profiling is relatively low-cost (at least compared to the snapshotting), and can be safely left active on many processors for long periods of time.
-
-# Logging
-
-A message can be added to an in-game log using the [`log` instruction](#instruction-log). Logged messages can be inspected on the **Log** screen, including logs from processors connected to the current one via links or variables. The log content can be copied to the clipboard or saved to a file. Basic filtering by level and category is available. Logged messages aren't saved in the map file and are lost when exiting the map.
-
-The maximum number of logged messages per processor is configurable in settings. When the limit is reached, older messages are removed from the log.
-
-On the log screen, all filtering buttons are initially unchecked, which deactivates the filter. When at least one level or category button is selected, only messages matching selected levels and categories are displayed.
-
-The log screen also includes buttons to switch between a live and paused/suspended mode:
-
-* **Live mode**: the logs are updated and displayed on the fly. At most a hundred of the latest messages matching the current filter are displayed, for performance reasons. Still, if the logic generates a lot of messages, the performance on some devices may suffer.
-* **Paused mode**: the game is paused, meaning no new logs are generated. At most 5,000 messages matching the current filter are displayed.
-* **Suspended mode**: the game is multiplayer and cannot be paused, but log updates are suspended. At most 5,000 messages from the connected processors are gathered, and the ones matching the filter are displayed. The set of log messages is stable and preserved until the **Live** mode is activated again.
-
-Even when displaying logs from multiple processors, the log messages are always shown in the order in which they were generated.
+It is possible to activate creating a snapshot when a breakpoint is hit or an assertion fails.
 
 # Custom instructions
 
@@ -178,9 +178,6 @@ This instruction compares the runtime data type to an expected value and display
   * `senseable`
 * `actualValue`: the value being tested.
 * `message`: the error message to display in case the assertion fails. In the UI, the field is only displayed after tapping a button. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. Additionally, a variable name enclosed in curly braces (`{` and `}`) is replaced with the actual variable value. If the message is not a string or is an empty string, a default message is displayed.
-
-> [!NOTE]
-> This instruction is still being developed and may not work as expected for some combinations of parameters. 
 
 ## Instruction `assertflush`
 
@@ -279,57 +276,49 @@ This option is particularly useful when trying to profile startup/initialization
 
 # Settings
 
-## Disable breakpoints
+The Settings screen is divided into several sections.
 
-Disables breakpoints in processors: the execution continues on the next instruction without pausing.
+## User Interface
 
-## Breakpoint on failed assertions
+* **Triple tap speed**: triple-tapping a block within the configured interval opens the **Vars**/**Memory**/**Properties** screen for the block.
+* **Override processor/memory config buttons**: when active, the mod adds additional config buttons to processor's config menu and activates config menu for memory blocks. This action might interfere with custom config buttons added by other mods; when disabled, Mlog Dev Tools doesn't interfere with blocks' config.
+* **Left config button**: selects the additional action available in the processor's config menu.
+* **Right config button**: selects the additional action available in the processor's config menu.
 
-When active, a failed assertion is handled in the same way as a breakpoint and the execution then continues on the next instruction. If breakpoints are disabled, the assertions are completely ignored.
+## Map Indicators
 
-## Detach camera on breakpoint
+* **Show waits longer than**: sets the minimal wait time specified in the `wait` instruction parameter which causes the wait to be indicated on processors. It is possible to completely hide the indication by moving the slider all the way to the left.
+* **Processor updates per tick**: to indicate the stopped and waiting processors, the mod needs to inspect the state of all processors on the map periodically. At most the given number of processors gets inspected in each tick. If there are a lot of processors on the map and the performance suffers, reducing this value may help.
+* **Visual warning**: governs the use of visual effects on the map itself to draw attention to stopped or failed processors. Effects can be turned off completely, performed just once when the processor is stopped or failed, or performed periodically with a given interval.
 
-When a breakpoint hits, the camera is detached so that the processor remains in view. The original state of the camera is restored when the game is unpaused. In case detaching the camera causes some problems, it can be disabled. 
+## Vars/Memory/Properties screen
 
-## Instruction limit
+* **Variable updates**: number of game ticks between the frequency of variable updates on the **Vars**/**Memory**/**Properties** screens.
+* **Significant digits**: the number of significant digits used when displaying decimal numbers in the **Vars**/**Memory**/**Properties** screens.
 
-Allows increasing the instruction limit in logic processors. The increased limit may be used to add debugging code to your program, which otherwise wouldn't fit due to the standard instruction limit being exceeded.
+## Debugging
 
-## Show waits longer than (sec)
+* **Max instructions**: allows increasing the instruction limit in logic processors. The increased limit may be used to add debugging code to your program, which otherwise wouldn't fit due to the standard instruction limit being exceeded.
+* **Disable breakpoints**: disables breakpoints in processors - the execution continues on the next instruction without pausing.
+* **Breakpoint on failed assertions**: when active, a failed assertion is handled in the same way as a breakpoint and the execution then continues on the next instruction. If breakpoints are disabled, the assertions are completely ignored.
+* **Detach camera on breakpoint**: when a breakpoint hits, the camera is detached so that the processor remains in view. The original state of the camera is restored when the game is unpaused. In case detaching the camera causes some problems, it can be disabled. 
 
-Sets the minimal wait time specified in the `wait` instruction parameter which causes the wait to be indicated on processors. It is possible to completely hide the indication by setting the value to `0`. 
+## Profiler
 
-## Processor updates per tick
+* **Start the profiler immediately**: when active, the profiler is started as soon as the **Profiler** screen is opened.
 
-To indicate the stopped and waiting processors, the mod needs to inspect the state of all processors on the map periodically. At most the given number of processors gets inspected in each tick. If there are a lot of processors on the map and the performance suffers, reducing this value may help.   
+## Logging
 
-## Visual warning
+* **Log size**: the amount of in-game log messages to keep per processor (see the [`log` instruction](#instruction-log)).
+* **Level limit**: messages with level lower than the specified limit are ignored when generated by the `log` instruction.
+* **Clear log on restart**: when active, the log is cleared when the processor is recompiled or restarted.
+* **Generate system log messages**: when active, some processor-related events are logged in the processor's log.
 
-Governs the use of visual effects on the map itself to draw attention to stopped or failed processors. Effects can be turned off completely, performed just once when the processor is stopped or failed, or performed periodically with a given interval. 
+## Snapshots
 
-## Triple tap speed
-
-Triple-tapping a block within the configured interval opens the Sensors/Vars/Memory screen for the block.
-
-## Snapshot limit
-
-The maximum number of snapshots kept **per block**. Setting this value to 0 deactivates snapshots entirely and removes snapshot-related features from the UI.
+* **Snapshot limit**: the maximum number of snapshots kept **per block**. Setting this value to 0 deactivates snapshots entirely and removes snapshot-related features from the UI.
+* **Take a snapshot on a breakpoint**: when enabled, a connected snapshot will be automatically created when a breakpoint is triggered.
+* **Take a snapshot on a failed assertion**: when enabled, an isolated snapshot will be automatically created when an assertion fails.
 
 > [!NOTE]
-> Large values may cause memory or performance issues.
-
-## Take a snapshot on a breakpoint
-
-When enabled, a connected snapshot will be automatically created when a breakpoint is triggered.
-
-## Take a snapshot on a failed assertion
-
-When enabled, an isolated snapshot will be automatically created when an assertion fails.
-
-## Variable updates
-
-Number of game ticks between the frequency of variable updates on the Vars/Memory/Properties screens.
-
-## Significant digits
-
-The number of significant digits used when displaying decimal numbers in the Vars/Memory/Properties screens.
+> Large values of the **Snapshot limit** setting may cause memory or performance issues.

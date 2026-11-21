@@ -3,7 +3,7 @@ name: "mlog-assertions-8"
 subtitle: "Mlog development made easy",
 author: "cardillan"
 main: "cardillan.mlogassertions.MlogDevTools"
-version: 0.12.1
+version: 0.12.2
 minGameVersion: 160.5
 java: true
 hidden: true
@@ -21,7 +21,7 @@ Settings for overriding instruction limit, by up to 1000 instructions, to make s
 
 A [[]accent]profiler[[]] for gathering statistics about program execution.
 
-[[]accent]Logging[[]]: a custom `log` instruction creates logging messages that can be later inspected from the UI.
+[[]accent]Logging[[]]: a custom `log` instruction creates logging messages that can be inspected from the UI.
 
 Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a breakpoint, taking snapshots and managing profiling.
 
