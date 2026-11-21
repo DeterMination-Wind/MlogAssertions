@@ -3,6 +3,8 @@ package cardillan.mlogassertions.ui;
 import arc.Core;
 import arc.Events;
 import arc.scene.Element;
+import arc.scene.event.ResizeListener;
+import arc.scene.event.VisibilityListener;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
@@ -10,6 +12,7 @@ import cardillan.mlogassertions.MlogDevTools;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
+import mindustry.game.EventType.Trigger;
 import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.logic.GlobalVarsDialog;
@@ -33,8 +36,36 @@ public class LogicDialogAddon {
     static LogicBlock.LogicBuild editedBuild = null;
 
     // The variables button installed into a dialog that replaced Vars.ui.logic, kept so that a
-    // patched bar is not rebuilt every time the dialog is shown or resized.
+    // patched bar is not rebuilt every time the dialog is shown or resized. Reset whenever the
+    // watched dialog instance changes, because that instance gets a fresh vanilla button.
     static TextButton replacedVariablesButton;
+
+    // The dialog instance currently carrying the shown listener. Another mod (LogicSugar) may
+    // replace Vars.ui.logic after ClientLoadEvent, so the addon has to follow the current
+    // instance instead of binding once to the vanilla dialog it would discard.
+    static LogicDialog watchedDialog;
+
+    // What Dialog.shown(Runnable) installs internally, kept as a field here so the listener can
+    // be detached when the watched dialog is replaced instead of outliving its instance.
+    static final VisibilityListener shownListener = new VisibilityListener() {
+        @Override
+        public boolean shown() {
+            setupLogicDialog();
+            return false;
+        }
+    };
+
+    // Arc's scene-resize listener on the same instance. This replaces the old global
+    // ResizeEvent handler, which ran before the vanilla LogicDialog.setup() cleared the button
+    // row and therefore had its work undone on a compact/portrait flip. This listener runs from
+    // Dialog.act on the frame after the scene size changed, i.e. after setup() and after another
+    // editor (LogicSugar) has re-installed its own controls, so the variables cell is patched last.
+    static final ResizeListener resizedListener = new ResizeListener() {
+        @Override
+        public void resized() {
+            if(Vars.ui != null && Vars.ui.logic != null && Vars.ui.logic.isShown()) setupLogicDialog();
+        }
+    };
 
     static int tapCount = 0;
     static long timeTapped1, timeTapped2;
@@ -90,17 +121,62 @@ public class LogicDialogAddon {
         });
 
 
-        Vars.ui.logic.shown(LogicDialogAddon::setupLogicDialog);
+        // Follow Vars.ui.logic instead of binding to the instance that exists right now: another
+        // mod may install its own LogicDialog subclass one frame after ClientLoadEvent.
+        watchDialog();
 
-        Events.on(EventType.ResizeEvent.class, event -> {
-            if (Vars.ui.logic.isShown() && Core.scene.getDialog() == Vars.ui.logic) {
-                setupLogicDialog();
-            }
-        });
+        // Cheap per-frame identity check (one field read) so a replaced dialog is patched on the
+        // next frame, including when the replacement happens while the editor is already open.
+        Events.run(Trigger.update, LogicDialogAddon::watchDialog);
+    }
+
+    /**
+     * Attaches the addon to the current {@link Vars#ui}.logic instance, detaching it from the
+     * previous one. Idempotent: the same instance is only ever given one shown listener.
+     *
+     * <p>When a mod replaces {@code Vars.ui.logic} (LogicSugar does this one frame after
+     * ClientLoadEvent), the game keeps opening the replacement, so a one-shot binding left the
+     * enhanced variables button missing from its first open. Called from a per-frame trigger and
+     * exposed as {@link #refreshEditorAddon()} for third-party editors that swap the dialog
+     * themselves.</p>
+     */
+    static void watchDialog() {
+        if (Vars.ui == null) return;
+
+        LogicDialog current = Vars.ui.logic;
+        if (current == watchedDialog) return;
+
+        if (watchedDialog != null) {
+            watchedDialog.removeListener(shownListener);
+            watchedDialog.removeListener(resizedListener);
+        }
+        watchedDialog = current;
+        replacedVariablesButton = null;
+        if (current == null) return;
+
+        current.addListener(shownListener);
+        current.addListener(resizedListener);
+
+        // The replacement may already be on screen: the swap is not necessarily tied to a show.
+        // Patching here is safe because setupLogicDialog() guards every reflective field.
+        if (current.isShown()) setupLogicDialog();
+    }
+
+    /**
+     * Runs the dialog watcher once and patches the current dialog if it is open. Intended for
+     * third-party editors that replace Vars.ui.logic without triggering a show, callable
+     * reflectively so no compile-time dependency on this mod is required.
+     */
+    public static void refreshEditorAddon() {
+        watchDialog();
+        if (Vars.ui != null && Vars.ui.logic != null && Vars.ui.logic.isShown()) {
+            setupLogicDialog();
+        }
     }
 
     private static void setupLogicDialog() {
-        LogicDialog dialog = Vars.ui.logic;
+        LogicDialog dialog = Vars.ui == null ? null : Vars.ui.logic;
+        if (dialog == null) return;
 
         // Only the unmodified dialog gets its button row rebuilt. Any subclass may build that row
         // out of Stack/Table cells: rebuilding it would flatten the other mod's layout, and
@@ -180,8 +256,11 @@ public class LogicDialogAddon {
         Cell<TextButton> built = new Table().button("@variables", Icon.menu, () -> {
             //in the editor, it should display the global variables only (the button text is different)
             if (!dialog.shouldShowVariables()) {
+                // Resolved at click time: the dialog this button belongs to may not be the one
+                // init() cached (another mod can replace Vars.ui.logic at any point).
+                GlobalVarsDialog globals = resolveGlobalsDialog();
                 // The field is optional: a fork without it loses this button only.
-                if (globalsDialog != null) globalsDialog.show();
+                if (globals != null) globals.show();
                 return;
             }
 
@@ -231,6 +310,23 @@ public class LogicDialogAddon {
         }
 
         throw new NoSuchFieldException("executor");
+    }
+
+    /**
+     * The globals dialog of the editor that is current right now. A one-shot capture in init()
+     * would keep pointing at the vanilla dialog after another mod replaced Vars.ui.logic; the
+     * cached instance stays as the fallback for forks where the field cannot be read.
+     */
+    private static GlobalVarsDialog resolveGlobalsDialog() {
+        LogicDialog dialog = Vars.ui == null ? null : Vars.ui.logic;
+        if (dialog != null) {
+            try {
+                return (GlobalVarsDialog) findField(LogicDialog.class, "globalsDialog").get(dialog);
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                //keep the cached instance; the field is optional and must not break the button
+            }
+        }
+        return globalsDialog;
     }
 
     /** Finds a field declared on the class or any of its superclasses and makes it accessible. */
